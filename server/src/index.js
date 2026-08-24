@@ -1,10 +1,17 @@
 const express = require('express');
 const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const { initDb } = require('./database');
+const { initDb, DB_PATH } = require('./database');
 const authRoutes = require('./routes/auth');
+
+// Fail fast if SESSION_SECRET is not set
+if (!process.env.SESSION_SECRET) {
+  console.error('FATAL: SESSION_SECRET environment variable is required. Set it before starting the server.');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,9 +26,14 @@ app.use(cors({
   credentials: true
 }));
 
-// Session configuration
+// Session configuration with SQLite-backed store
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'change-this-in-production',
+  store: new SQLiteStore({
+    db: 'sessions.db',
+    dir: path.join(__dirname, '..', 'data'),
+    table: 'sessions'
+  }),
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -32,17 +44,19 @@ app.use(session({
   }
 }));
 
-// Rate limiting for login
+// Rate limiting for login ONLY
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // 10 attempts per window
   message: { error: 'Too many login attempts, please try again later' },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip
 });
 
-// Routes
-app.use('/api/auth', loginLimiter, authRoutes);
+// Routes — rate limiter applied ONLY to /login, mounted before auth routes
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth', authRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

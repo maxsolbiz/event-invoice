@@ -54,7 +54,7 @@ async function seed() {
     console.log(`  Password hash: ${passwordHash.substring(0, 20)}...`);
     console.log('\nYou can now start the server with: npm start');
   } finally {
-    db.close();
+    // No db.close() — using shared connection
   }
 
   rl.close();

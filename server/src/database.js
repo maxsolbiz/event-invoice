@@ -3,17 +3,21 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'invoice.db');
 
+let db = null;
+
 function getDb() {
-  const db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  if (!db) {
+    db = new Database(DB_PATH);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+  }
   return db;
 }
 
 function initDb() {
-  const db = getDb();
+  const d = getDb();
 
-  db.exec(`
+  d.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -29,8 +33,6 @@ function initDb() {
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
-
-  db.close();
 }
 
 module.exports = { getDb, initDb, DB_PATH };

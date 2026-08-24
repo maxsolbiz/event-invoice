@@ -4,6 +4,9 @@ const { getDb } = require('../database');
 
 const router = express.Router();
 
+// Dummy hash for timing normalization when user not found
+const DUMMY_HASH = '$2b$12$' + 'x'.repeat(53);
+
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
 
@@ -15,7 +18,11 @@ router.post('/login', (req, res) => {
   try {
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 
-    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    // Always run bcrypt compare to normalize timing
+    const hashToCheck = user ? user.password_hash : DUMMY_HASH;
+    const passwordValid = bcrypt.compareSync(password, hashToCheck);
+
+    if (!user || !passwordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -23,12 +30,12 @@ router.post('/login', (req, res) => {
     req.session.username = user.username;
     req.session.role = user.role;
 
-    res.json({ 
+    res.json({
       message: 'Login successful',
       user: { id: user.id, username: user.username, role: user.role }
     });
   } finally {
-    db.close();
+    // No db.close() — using shared connection
   }
 });
 
@@ -57,7 +64,7 @@ router.get('/me', (req, res) => {
 
     res.json({ user });
   } finally {
-    db.close();
+    // No db.close() — using shared connection
   }
 });
 
