@@ -4,7 +4,7 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const { initDb, DB_PATH } = require('./database');
+const { initDb } = require('./database');
 const authRoutes = require('./routes/auth');
 
 // Fail fast if SESSION_SECRET is not set

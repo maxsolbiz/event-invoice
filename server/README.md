@@ -48,6 +48,7 @@ npm run dev
 ## Security Notes
 
 - Passwords are hashed with bcrypt (cost factor 12)
-- Sessions use httpOnly cookies
+- Sessions use httpOnly cookies, stored in `data/sessions.db` via connect-sqlite3 (not in invoice.db)
 - Rate limiting on login endpoint (10 attempts per 15 minutes)
 - CORS locked to frontend origin
+- SESSION_SECRET is required — server exits immediately if not set

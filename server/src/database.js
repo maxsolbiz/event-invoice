@@ -25,13 +25,6 @@ function initDb() {
       role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
       created_at TEXT DEFAULT (datetime('now'))
     );
-
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      user_id INTEGER NOT NULL,
-      expires_at TEXT NOT NULL,
-      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
   `);
 }
 
