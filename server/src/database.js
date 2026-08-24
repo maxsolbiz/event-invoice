@@ -14,6 +14,21 @@ function getDb() {
   return db;
 }
 
+function getTestDb() {
+  if (!db) {
+    db = new Database(':memory:');
+    db.pragma('foreign_keys = ON');
+  }
+  return db;
+}
+
+function resetDb() {
+  if (db) {
+    try { db.close(); } catch (e) {}
+    db = null;
+  }
+}
+
 function initDb() {
   const d = getDb();
 
@@ -93,4 +108,4 @@ function initDb() {
   }
 }
 
-module.exports = { getDb, initDb, DB_PATH };
+module.exports = { getDb, getTestDb, initDb, resetDb, DB_PATH };

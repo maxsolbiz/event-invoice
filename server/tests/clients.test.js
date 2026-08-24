@@ -77,7 +77,8 @@ describe('Clients API', () => {
         .expect(200);
 
       assert.ok(Array.isArray(res.body.clients));
-      assert.ok(res.body.clients.length >= 1);
+      // At this point: Acme Corp created (upsert doesn't add new row) = 1 client
+      assert.strictEqual(res.body.clients.length, 1);
     });
   });
 

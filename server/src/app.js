@@ -4,16 +4,20 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const { initDb } = require('./database');
+const { initDb, getTestDb, resetDb } = require('./database');
 const authRoutes = require('./routes/auth');
 const invoiceRoutes = require('./routes/invoices');
 const clientRoutes = require('./routes/clients');
 const settingsRoutes = require('./routes/settings');
 
-function createApp() {
+function createApp(useMemoryDb = false) {
   const app = express();
 
-  // Initialize database tables
+  // Initialize database
+  if (useMemoryDb) {
+    resetDb();
+    getTestDb();
+  }
   initDb();
 
   // Middleware
@@ -23,23 +27,39 @@ function createApp() {
     credentials: true
   }));
 
-  // Session configuration with SQLite-backed store
-  app.use(session({
-    store: new SQLiteStore({
-      db: 'sessions.db',
-      dir: path.join(__dirname, '..', 'data'),
-      table: 'sessions'
-    }),
-    secret: process.env.SESSION_SECRET || 'test-secret-for-unit-tests',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000
-    }
-  }));
+  // Session configuration
+  if (useMemoryDb) {
+    // In-memory session store for tests
+    app.use(session({
+      secret: process.env.SESSION_SECRET || 'test-secret-for-unit-tests',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000
+      }
+    }));
+  } else {
+    // SQLite-backed session store for production
+    app.use(session({
+      store: new SQLiteStore({
+        db: 'sessions.db',
+        dir: path.join(__dirname, '..', 'data'),
+        table: 'sessions'
+      }),
+      secret: process.env.SESSION_SECRET || 'test-secret-for-unit-tests',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000
+      }
+    }));
+  }
 
   // Rate limiting for login ONLY
   const loginLimiter = rateLimit({

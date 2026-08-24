@@ -43,8 +43,8 @@ describe('Settings API', () => {
         .expect(200);
 
       assert.ok(res.body.settings);
-      assert.ok(res.body.settings.company_name);
-      assert.ok(res.body.settings.invoice_prefix);
+      assert.strictEqual(res.body.settings.company_name, 'TEST COMPANY');
+      assert.strictEqual(res.body.settings.invoice_prefix, 'TEST-');
     });
 
     it('should return settings for regular user', async () => {

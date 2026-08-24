@@ -142,7 +142,8 @@ describe('Invoices API', () => {
         .expect(200);
 
       assert.ok(Array.isArray(res.body.invoices));
-      assert.ok(res.body.invoices.length >= 2);
+      // At this point: 1 admin invoice + 1 user invoice = 2 invoices
+      assert.strictEqual(res.body.invoices.length, 2);
     });
   });
 
