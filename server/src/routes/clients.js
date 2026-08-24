@@ -1,7 +1,11 @@
 const express = require('express');
 const { getDb } = require('../database');
+const { requireAuth } = require('../middleware');
 
 const router = express.Router();
+
+// All client routes require authentication
+router.use(requireAuth);
 
 // GET /api/clients — list all clients
 router.get('/', (req, res) => {

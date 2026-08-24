@@ -1,7 +1,53 @@
 const express = require('express');
 const { getDb } = require('../database');
+const { requireAuth } = require('../middleware');
 
 const router = express.Router();
+
+// All invoice routes require authentication
+router.use(requireAuth);
+
+// Helper: validate and recalculate totals from services
+function validateAndCalculate(services, vat) {
+  if (!Array.isArray(services) || services.length === 0) {
+    return { error: 'At least one service is required' };
+  }
+
+  const cleanedServices = [];
+  let subtotal = 0;
+
+  for (let i = 0; i < services.length; i++) {
+    const s = services[i];
+    const qty = Number(s.qty);
+    const unitPrice = Number(s.unit_price);
+
+    if (isNaN(qty) || qty < 0) {
+      return { error: `Service ${i + 1}: qty must be a non-negative number` };
+    }
+    if (isNaN(unitPrice) || unitPrice < 0) {
+      return { error: `Service ${i + 1}: unit_price must be a non-negative number` };
+    }
+
+    const amount = qty * unitPrice;
+    subtotal += amount;
+
+    cleanedServices.push({
+      description: String(s.description || ''),
+      qty,
+      unit_price: unitPrice,
+      amount
+    });
+  }
+
+  const vatNum = Number(vat);
+  if (isNaN(vatNum) || vatNum < 0) {
+    return { error: 'vat must be a non-negative number' };
+  }
+
+  const total = subtotal + vatNum;
+
+  return { cleanedServices, subtotal, total };
+}
 
 // GET /api/invoices — list all invoices
 router.get('/', (req, res) => {
@@ -41,8 +87,14 @@ router.post('/', (req, res) => {
     const {
       pi_no, invoice_date, currency, client_name, client_contact,
       venue, event_date, event_type, event_note, client_address,
-      vat, payment_terms, notes, subtotal, total, client_id, services
+      vat, payment_terms, notes, client_id, services
     } = req.body;
+
+    // Server-side calculation — never trust client subtotal/total
+    const calc = validateAndCalculate(services, vat);
+    if (calc.error) {
+      return res.status(400).json({ error: calc.error });
+    }
 
     const result = db.prepare(`
       INSERT INTO invoices(pi_no, invoice_date, currency, client_name, client_contact,
@@ -52,23 +104,26 @@ router.post('/', (req, res) => {
     `).run(
       pi_no, invoice_date, currency, client_name, client_contact,
       venue, event_date, event_type, event_note, client_address,
-      vat, payment_terms, notes, subtotal, total, client_id || null,
-      req.session.userId
+      Number(vat), payment_terms, notes, calc.subtotal, calc.total,
+      client_id || null, req.session.userId
     );
 
     const invoiceId = result.lastInsertRowid;
 
-    if (services && services.length > 0) {
-      const insertService = db.prepare(`
-        INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
-        VALUES(?,?,?,?,?,?)
-      `);
-      services.forEach((s, i) => {
-        insertService.run(invoiceId, i + 1, s.description, s.qty, s.unit_price, s.amount);
-      });
-    }
+    const insertService = db.prepare(`
+      INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
+      VALUES(?,?,?,?,?,?)
+    `);
+    calc.cleanedServices.forEach((s, i) => {
+      insertService.run(invoiceId, i + 1, s.description, s.qty, s.unit_price, s.amount);
+    });
 
-    res.status(201).json({ id: invoiceId, message: 'Invoice created' });
+    res.status(201).json({
+      id: invoiceId,
+      subtotal: calc.subtotal,
+      total: calc.total,
+      message: 'Invoice created'
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create invoice' });
   }
@@ -86,8 +141,14 @@ router.put('/:id', (req, res) => {
     const {
       pi_no, invoice_date, currency, client_name, client_contact,
       venue, event_date, event_type, event_note, client_address,
-      vat, payment_terms, notes, subtotal, total, client_id, services
+      vat, payment_terms, notes, client_id, services
     } = req.body;
+
+    // Server-side calculation — never trust client subtotal/total
+    const calc = validateAndCalculate(services, vat);
+    if (calc.error) {
+      return res.status(400).json({ error: calc.error });
+    }
 
     db.prepare(`
       UPDATE invoices SET pi_no=?, invoice_date=?, currency=?, client_name=?, client_contact=?,
@@ -97,23 +158,25 @@ router.put('/:id', (req, res) => {
     `).run(
       pi_no, invoice_date, currency, client_name, client_contact,
       venue, event_date, event_type, event_note, client_address,
-      vat, payment_terms, notes, subtotal, total, client_id || null,
-      req.params.id
+      Number(vat), payment_terms, notes, calc.subtotal, calc.total,
+      client_id || null, req.params.id
     );
 
     // Replace services
     db.prepare('DELETE FROM invoice_services WHERE invoice_id = ?').run(req.params.id);
-    if (services && services.length > 0) {
-      const insertService = db.prepare(`
-        INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
-        VALUES(?,?,?,?,?,?)
-      `);
-      services.forEach((s, i) => {
-        insertService.run(req.params.id, i + 1, s.description, s.qty, s.unit_price, s.amount);
-      });
-    }
+    const insertService = db.prepare(`
+      INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
+      VALUES(?,?,?,?,?,?)
+    `);
+    calc.cleanedServices.forEach((s, i) => {
+      insertService.run(req.params.id, i + 1, s.description, s.qty, s.unit_price, s.amount);
+    });
 
-    res.json({ message: 'Invoice updated' });
+    res.json({
+      subtotal: calc.subtotal,
+      total: calc.total,
+      message: 'Invoice updated'
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update invoice' });
   }

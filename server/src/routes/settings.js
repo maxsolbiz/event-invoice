@@ -4,8 +4,11 @@ const { requireAuth, requireRole } = require('../middleware');
 
 const router = express.Router();
 
+// All settings routes require authentication
+router.use(requireAuth);
+
 // GET /api/settings — get current settings (any authenticated user)
-router.get('/', requireAuth, (req, res) => {
+router.get('/', (req, res) => {
   const db = getDb();
   try {
     const settings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
@@ -19,7 +22,7 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // PUT /api/settings — update settings (admin only)
-router.put('/', requireAuth, requireRole('admin'), (req, res) => {
+router.put('/', requireRole('admin'), (req, res) => {
   const db = getDb();
   try {
     const {
