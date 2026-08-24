@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string) => {
     const data = await api.login(username, password);
     setUser(data.user);
-    router.push("/invoices");
+    router.push("/app/invoices");
   };
 
   const logout = async () => {

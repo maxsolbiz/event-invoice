@@ -168,15 +168,15 @@ function buildInvoiceHtml(
 
   <section class="summary-wrap">
     <div class="summary">
-      <div class="summary-row"><span>Subtotal</span><span>${cur} ${money(invoice.subtotal || 0)}</span></div>
-      <div class="summary-row"><span>VAT</span><span>${invoice.vat ? cur + " " + money(invoice.vat) : "—"}</span></div>
-      <div class="summary-row total"><span>TOTAL PAYABLE</span><span>${cur} ${money(invoice.total || 0)}</span></div>
+      <div class="summary-row"><span>Subtotal</span><span>${escapeHtml(cur)} ${money(invoice.subtotal || 0)}</span></div>
+      <div class="summary-row"><span>VAT</span><span>${invoice.vat ? escapeHtml(cur) + " " + money(invoice.vat) : "—"}</span></div>
+      <div class="summary-row total"><span>TOTAL PAYABLE</span><span>${escapeHtml(cur)} ${money(invoice.total || 0)}</span></div>
     </div>
   </section>
 
   <section class="words">
     <div class="w">Total Amount in Words</div>
-    <div class="text">${cur === "AED" ? amountWords(invoice.total || 0) : cur + " " + money(invoice.total || 0) + " Only"}</div>
+    <div class="text">${cur === "AED" ? amountWords(invoice.total || 0) : escapeHtml(cur) + " " + money(invoice.total || 0) + " Only"}</div>
   </section>
 
   <section class="notes">
