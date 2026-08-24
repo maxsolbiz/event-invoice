@@ -95,8 +95,8 @@ input:focus,textarea:focus,select:focus{border-color:#6b7280;box-shadow:0 0 0 2p
 .btn-download{background:#92400e;color:white}
 .btn-upload{background:#6b21a8;color:white}
 .view-invoice-btn{display:none;width:100%;padding:14px;margin-top:16px;background:#1f2937;color:white;text-align:center;border:0;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px}
-#loadModal,#invoiceModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
-#loadModal.show,#invoiceModal.show{display:flex}
+#loadModal,#invoiceModal,#settingsModal,#clientsModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+#loadModal.show,#invoiceModal.show,#settingsModal.show,#clientsModal.show{display:flex}
 .modal-box{background:#fff;border-radius:10px;padding:24px;max-width:600px;width:90%;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.2)}
 .modal-box h2{margin:0 0 16px;font-size:16px;color:#111827}
 .modal-box .close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;position:absolute;top:16px;right:20px}
@@ -230,8 +230,9 @@ input:focus,textarea:focus,select:focus{border-color:#6b7280;box-shadow:0 0 0 2p
       <div class="section">
         <h2>Client & Event Details</h2>
         <div class="grid">
-          <div class="field"><label>Client Name</label><input id="clientName" placeholder="Client full name"></div>
+          <div class="field"><label>Saved Client</label><select id="clientDropdown" onchange="onClientSelect()"><option value="">-- New Client --</option></select></div>
           <div class="field"><label>Contact Number</label><input id="clientContact" placeholder="+971 ..."></div>
+          <div class="field"><label>Client Name</label><input id="clientName" placeholder="Client full name"></div>
           <div class="field"><label>Event Venue</label><input id="venue" placeholder="Venue name / location"></div>
           <div class="field"><label>Event Date</label><input id="eventDate" type="date"></div>
           <div class="field full"><label>Client Address / Additional Details</label><textarea id="clientAddress" placeholder="Optional address or client details"></textarea></div>
@@ -285,6 +286,9 @@ input:focus,textarea:focus,select:focus{border-color:#6b7280;box-shadow:0 0 0 2p
         <button type="button" class="btn btn-upload" onclick="$('dbFileInput').click()">Upload DB</button>
         <input type="file" id="dbFileInput" class="file-input-hidden" accept=".sqlite,.db,.sqlite3" onchange="uploadDB(event)">
         <button type="button" class="btn btn-primary" onclick="renumberAllInvoices()">Renumber PI#</button>
+        <button type="button" class="btn btn-secondary" onclick="saveClient()">Save Client</button>
+        <button type="button" class="btn btn-secondary" onclick="openClientsModal()">Clients</button>
+        <button type="button" class="btn btn-secondary" onclick="openSettingsModal()">Settings</button>
       </div>
       <div id="dbStatus" class="db-status"></div>
     </form>
@@ -317,6 +321,37 @@ input:focus,textarea:focus,select:focus{border-color:#6b7280;box-shadow:0 0 0 2p
       </div>
     </div>
     <div class="invoice-modal-body" id="invoiceModalBody"></div>
+  </div>
+</div>
+
+<div id="settingsModal">
+  <div class="modal-box" style="max-width:550px">
+    <h2>Settings</h2>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label>Company Name</label><input id="settCompanyName"></div>
+      <div class="field"><label>Company Subtitle</label><input id="settCompanySubtitle"></div>
+      <div class="field"><label>Invoice Prefix</label><input id="settInvoicePrefix" placeholder="MOE-PI-"></div>
+      <div class="grid" style="gap:12px">
+        <div class="field"><label>Default Currency</label><select id="settDefaultCurrency"><option>AED</option><option>USD</option><option>EUR</option><option>GBP</option></select></div>
+        <div class="field"><label>Default VAT</label><input id="settDefaultVat" type="number" min="0" step="0.01" value="0"></div>
+      </div>
+      <div class="field"><label>Default Payment Terms</label><input id="settDefaultPaymentTerms"></div>
+      <div class="field"><label>Default Invoice Notes</label><textarea id="settDefaultNotes" rows="3"></textarea></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<div id="clientsModal">
+  <div class="modal-box" style="max-width:650px">
+    <h2>Saved Clients</h2>
+    <div class="invoice-list" id="clientsList"></div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" class="btn btn-secondary" onclick="closeClientsModal()">Close</button>
+    </div>
   </div>
 </div>
 
@@ -551,6 +586,7 @@ function generateInvoice(e){
 }
 
 let db=null;
+let appSettings={};
 
 async function initDB(){
   try{
@@ -579,6 +615,38 @@ async function initDB(){
     )`);
     try{db.run("ALTER TABLE invoice_services ADD COLUMN qty REAL DEFAULT 1")}catch(e){}
     try{db.run("ALTER TABLE invoice_services ADD COLUMN unit_price REAL DEFAULT 0")}catch(e){}
+    try{db.run("ALTER TABLE invoices ADD COLUMN client_id INTEGER REFERENCES clients(id)")}catch(e){}
+    db.run(`CREATE TABLE IF NOT EXISTS settings(
+      id INTEGER PRIMARY KEY,
+      company_name TEXT DEFAULT 'MOMENT ORGANIZER EVENTS MANAGING',
+      company_subtitle TEXT DEFAULT 'Event Management & Event Decoration',
+      invoice_prefix TEXT DEFAULT 'MOE-PI',
+      default_currency TEXT DEFAULT 'AED',
+      default_vat REAL DEFAULT 0,
+      default_payment_terms TEXT DEFAULT 'As agreed with the client.',
+      default_notes TEXT DEFAULT 'This Proforma Invoice is issued for the above-mentioned event service.'
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS clients(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      contact TEXT,
+      address TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`);
+    const settingsCount=db.exec("SELECT COUNT(*) FROM settings");
+    const count=(settingsCount.length&&settingsCount[0].values.length)?settingsCount[0].values[0][0]:0;
+    if(count===0){
+      db.run(`INSERT INTO settings(id,company_name,company_subtitle,invoice_prefix,default_currency,default_vat,default_payment_terms,default_notes)
+        VALUES(1,?,?,?,?,?,?,?)`,[
+        "MOMENT ORGANIZER EVENTS MANAGING",
+        "Event Management & Event Decoration",
+        "MOE-PI-",
+        "AED",0,
+        "As agreed with the client.",
+        "This Proforma Invoice is issued for the above-mentioned event service."
+      ]);
+    }
+    loadSettings();
     saveDBToStorage();
     $("piNo").value=nextPINumber();
     $("dbStatus").textContent="Database ready";
@@ -594,6 +662,172 @@ function saveDBToStorage(){
   let binary="";
   for(let i=0;i<buf.length;i++) binary+=String.fromCharCode(buf[i]);
   localStorage.setItem("invoiceDB",btoa(binary));
+}
+
+function loadSettings(){
+  if(!db)return;
+  const res=db.exec("SELECT * FROM settings WHERE id=1");
+  if(res.length&&res[0].values.length){
+    const cols=res[0].columns;
+    const vals=res[0].values[0];
+    appSettings={};
+    cols.forEach((c,i)=>appSettings[c]=vals[i]);
+  }
+}
+
+function saveSettings(){
+  if(!db){showToast("Database not ready","error");return;}
+  db.run(`UPDATE settings SET company_name=?,company_subtitle=?,invoice_prefix=?,default_currency=?,default_vat=?,default_payment_terms=?,default_notes=? WHERE id=1`,[
+    $("settCompanyName").value.trim()||"MOMENT ORGANIZER EVENTS MANAGING",
+    $("settCompanySubtitle").value.trim()||"Event Management & Event Decoration",
+    $("settInvoicePrefix").value.trim()||"MOE-PI-",
+    $("settDefaultCurrency").value||"AED",
+    Number($("settDefaultVat").value)||0,
+    $("settDefaultPaymentTerms").value.trim()||"As agreed with the client.",
+    $("settDefaultNotes").value.trim()||"This Proforma Invoice is issued for the above-mentioned event service."
+  ]);
+  saveDBToStorage();
+  loadSettings();
+  closeSettingsModal();
+  showToast("Settings saved");
+}
+
+function openSettingsModal(){
+  $("settCompanyName").value=appSettings.company_name||"";
+  $("settCompanySubtitle").value=appSettings.company_subtitle||"";
+  $("settInvoicePrefix").value=appSettings.invoice_prefix||"MOE-PI-";
+  $("settDefaultCurrency").value=appSettings.default_currency||"AED";
+  $("settDefaultVat").value=appSettings.default_vat||0;
+  $("settDefaultPaymentTerms").value=appSettings.default_payment_terms||"";
+  $("settDefaultNotes").value=appSettings.default_notes||"";
+  $("settingsModal").classList.add("show");
+}
+
+function closeSettingsModal(){
+  $("settingsModal").classList.remove("show");
+}
+
+function applySettingsToForm(){
+  $("currency").value=appSettings.default_currency||"AED";
+  $("vat").value=appSettings.default_vat||0;
+  $("paymentTerms").value=appSettings.default_payment_terms||"As agreed with the client.";
+  $("notes").value=appSettings.default_notes||"This Proforma Invoice is issued for the above-mentioned event service.";
+}
+
+function saveClient(){
+  if(!db){showToast("Database not ready","error");return;}
+  const name=$("clientName").value.trim();
+  if(!name){showToast("Client name is required","error");return;}
+  const contact=$("clientContact").value.trim();
+  const address=$("clientAddress").value.trim();
+  const existing=getClientByName(name);
+  if(existing){
+    db.run("UPDATE clients SET contact=?,address=? WHERE id=?",[contact,address,existing.id]);
+  }else{
+    db.run("INSERT INTO clients(name,contact,address) VALUES(?,?,?)",[name,contact,address]);
+  }
+  saveDBToStorage();
+  refreshClientDropdown();
+  showToast("Client saved: "+name);
+}
+
+function getClientByName(name){
+  if(!db)return null;
+  const res=db.exec("SELECT id,name,contact,address FROM clients WHERE name=?",[name]);
+  if(res.length&&res[0].values.length){
+    return{id:res[0].values[0][0],name:res[0].values[0][1],contact:res[0].values[0][2],address:res[0].values[0][3]};
+  }
+  return null;
+}
+
+function listClients(){
+  if(!db)return[];
+  const res=db.exec("SELECT id,name,contact,address,created_at FROM clients ORDER BY name ASC");
+  if(!res.length)return[];
+  return res[0].values.map(r=>({id:r[0],name:r[1],contact:r[2],address:r[3],created_at:r[4]}));
+}
+
+function refreshClientDropdown(){
+  const dd=$("clientDropdown");
+  if(!dd)return;
+  const current=dd.value;
+  dd.innerHTML='<option value="">-- New Client --</option>';
+  listClients().forEach(c=>{
+    const opt=document.createElement("option");
+    opt.value=c.id;
+    opt.textContent=c.name;
+    dd.appendChild(opt);
+  });
+  if(current)dd.value=current;
+}
+
+function onClientSelect(){
+  const dd=$("clientDropdown");
+  const id=dd.value;
+  if(!id){
+    $("clientName").value="";
+    $("clientContact").value="";
+    $("clientAddress").value="";
+    return;
+  }
+  if(!db)return;
+  const res=db.exec("SELECT name,contact,address FROM clients WHERE id="+id);
+  if(res.length&&res[0].values.length){
+    $("clientName").value=res[0].values[0][0]||"";
+    $("clientContact").value=res[0].values[0][1]||"";
+    $("clientAddress").value=res[0].values[0][2]||"";
+  }
+}
+
+function openClientsModal(){
+  const clients=listClients();
+  const list=$("clientsList");
+  if(!clients.length){
+    list.innerHTML='<div class="empty-msg">No saved clients</div>';
+  }else{
+    let html=`<table><thead><tr><th>Name</th><th>Contact</th><th>Address</th><th></th></tr></thead><tbody>`;
+    clients.forEach(c=>{
+      html+=`<tr onclick="loadClientIntoForm(${c.id})">
+        <td>${escapeHtml(c.name)}</td>
+        <td>${escapeHtml(c.contact||"")}</td>
+        <td>${escapeHtml(c.address||"")}</td>
+        <td><button class="btn btn-danger" style="padding:4px 8px;font-size:10px" onclick="event.stopPropagation();deleteClient(${c.id})">Delete</button></td>
+      </tr>`;
+    });
+    html+="</tbody></table>";
+    list.innerHTML=html;
+  }
+  $("clientsModal").classList.add("show");
+}
+
+function closeClientsModal(){
+  $("clientsModal").classList.remove("show");
+}
+
+function loadClientIntoForm(id){
+  if(!db)return;
+  const res=db.exec("SELECT name,contact,address FROM clients WHERE id="+id);
+  if(res.length&&res[0].values.length){
+    $("clientName").value=res[0].values[0][0]||"";
+    $("clientContact").value=res[0].values[0][1]||"";
+    $("clientAddress").value=res[0].values[0][2]||"";
+    refreshClientDropdown();
+    const dd=$("clientDropdown");
+    if(dd)dd.value=id;
+  }
+  closeClientsModal();
+}
+
+function deleteClient(id){
+  if(!confirm("Delete this client?"))return;
+  const linked=db.exec("SELECT COUNT(*) FROM invoices WHERE client_id="+id);
+  const count=(linked.length&&linked[0].values.length)?linked[0].values[0][0]:0;
+  if(count>0){showToast("Cannot delete client with existing invoices","error");return;}
+  db.run("DELETE FROM clients WHERE id="+id);
+  saveDBToStorage();
+  refreshClientDropdown();
+  openClientsModal();
+  showToast("Client deleted");
 }
 
 function showToast(msg,type="success"){
@@ -634,13 +868,14 @@ function saveInvoice(){
   }));
   const subtotal=services.reduce((s,x)=>s+x.amount,0);
   const vat=Number(val("vat")||0);
-  db.run(`INSERT INTO invoices(pi_no,invoice_date,currency,client_name,client_contact,venue,event_date,event_type,event_note,client_address,vat,payment_terms,notes,subtotal,total)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,[
+  const clientId=$("clientDropdown").value?Number($("clientDropdown").value):null;
+  db.run(`INSERT INTO invoices(pi_no,invoice_date,currency,client_name,client_contact,venue,event_date,event_type,event_note,client_address,vat,payment_terms,notes,subtotal,total,client_id)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,[
     val("piNo"),val("invoiceDate"),val("currency"),
     val("clientName"),val("clientContact"),val("venue"),
     val("eventDate"),val("eventType"),val("eventNote"),
     val("clientAddress"),vat,val("paymentTerms"),
-    val("notes"),subtotal,subtotal+vat
+    val("notes"),subtotal,subtotal+vat,clientId
   ]);
   const invId=db.exec("SELECT last_insert_rowid()")[0].values[0][0];
   services.forEach((s,i)=>{
@@ -709,6 +944,12 @@ function loadInvoice(id){
   $("vat").value=row.vat||0;
   $("paymentTerms").value=row.payment_terms||"";
   $("notes").value=row.notes||"";
+  refreshClientDropdown();
+  if(row.client_id){
+    $("clientDropdown").value=row.client_id;
+  }else{
+    $("clientDropdown").value="";
+  }
 
   $("services").innerHTML="";
   serviceCount=0;
@@ -773,6 +1014,8 @@ function resetForm(){
   $("invoiceDate").value=todayISO();
   $("services").innerHTML="";
   serviceCount=0;
+  applySettingsToForm();
+  refreshClientDropdown();
   addService("Venue Decoration & Themed Setup",1,1000);
   generateInvoice();
 }
@@ -785,6 +1028,9 @@ generateInvoice();
 initDB();
 $("loadModal").addEventListener("click",function(e){if(e.target===this)closeLoadModal();});
 $("invoiceModal").addEventListener("click",function(e){if(e.target===this)closeInvoiceModal();});
+$("settingsModal").addEventListener("click",function(e){if(e.target===this)closeSettingsModal();});
+$("clientsModal").addEventListener("click",function(e){if(e.target===this)closeClientsModal();});
+refreshClientDropdown();
 </script>
 </body>
 </html>
