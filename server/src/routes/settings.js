@@ -28,17 +28,20 @@ router.put('/', requireRole('admin'), (req, res) => {
   try {
     const {
       company_name, company_subtitle, invoice_prefix,
-      default_currency, default_vat, default_payment_terms, default_notes
+      default_currency, default_vat, default_payment_terms, default_notes,
+      company_logo, company_stamp
     } = req.body;
 
     db.prepare(`
       UPDATE settings SET
         company_name=?, company_subtitle=?, invoice_prefix=?,
-        default_currency=?, default_vat=?, default_payment_terms=?, default_notes=?
+        default_currency=?, default_vat=?, default_payment_terms=?, default_notes=?,
+        company_logo=?, company_stamp=?
       WHERE id=1
     `).run(
       company_name, company_subtitle, invoice_prefix,
-      default_currency, default_vat, default_payment_terms, default_notes
+      default_currency, default_vat, default_payment_terms, default_notes,
+      company_logo || null, company_stamp || null
     );
 
     logActivity(db, req, 'settings.update', 'settings', 1, 'Updated system settings');

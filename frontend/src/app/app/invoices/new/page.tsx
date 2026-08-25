@@ -275,7 +275,7 @@ export default function NewInvoicePage() {
       </form>
 
       <h2 className="text-lg font-semibold mb-3">Preview</h2>
-      <InvoicePreview invoice={previewInvoice} services={services} companyName={settings?.company_name} companySubtitle={settings?.company_subtitle} />
+      <InvoicePreview invoice={previewInvoice} services={services} companyName={settings?.company_name} companySubtitle={settings?.company_subtitle} companyLogo={settings?.company_logo} companyStamp={settings?.company_stamp} />
     </div>
   );
 }

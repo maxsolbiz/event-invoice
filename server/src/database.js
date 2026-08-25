@@ -107,6 +107,20 @@ function initDb() {
     // Column already exists
   }
 
+  // Schema migration: add company_logo column
+  try {
+    d.exec('ALTER TABLE settings ADD COLUMN company_logo TEXT');
+  } catch (e) {
+    // Column already exists
+  }
+
+  // Schema migration: add company_stamp column
+  try {
+    d.exec('ALTER TABLE settings ADD COLUMN company_stamp TEXT');
+  } catch (e) {
+    // Column already exists
+  }
+
   // Login events table
   d.exec(`
     CREATE TABLE IF NOT EXISTS login_events (

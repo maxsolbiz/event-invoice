@@ -181,6 +181,8 @@ export interface Settings {
   default_vat: number;
   default_payment_terms: string;
   default_notes: string;
+  company_logo: string | null;
+  company_stamp: string | null;
 }
 
 export interface LoginEvent {

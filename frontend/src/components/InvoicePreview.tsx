@@ -7,6 +7,8 @@ interface PreviewProps {
   services: { description: string; qty: number; unit_price: number; amount?: number }[];
   companyName?: string;
   companySubtitle?: string;
+  companyLogo?: string | null;
+  companyStamp?: string | null;
 }
 
 function money(n: number) {
@@ -50,7 +52,9 @@ function buildInvoiceHtml(
   invoice: Record<string, any>,
   services: { description: string; qty: number; unit_price: number; amount?: number }[],
   companyName: string,
-  companySubtitle: string
+  companySubtitle: string,
+  companyLogo: string,
+  companyStamp: string
 ) {
   const cur = invoice.currency || "AED";
   const rowsHtml = services
@@ -126,7 +130,10 @@ function buildInvoiceHtml(
 <div id="invoice">
   <header class="inv-header">
     <div class="company-brand">
-      <div class="company-name">${escapeHtml(companyName)}</div>
+      ${companyLogo
+        ? `<img src="${companyLogo}" alt="Company Logo" style="max-height:40px;max-width:300px;display:block">`
+        : `<div class="company-name">${escapeHtml(companyName)}</div>`
+      }
       <div class="company-subtitle">${escapeHtml(companySubtitle)}</div>
     </div>
     <div class="invoice-title">
@@ -190,7 +197,10 @@ function buildInvoiceHtml(
       <div class="sign-label">Authorized Signatory</div>
       <div class="sign-label">${escapeHtml(companyName)}</div>
     </div>
-    <div class="stamp">Company Stamp</div>
+    <div class="stamp">${companyStamp
+      ? `<img src="${companyStamp}" alt="Company Stamp" style="width:100%;height:100%;object-fit:contain;display:block">`
+      : `Company Stamp`
+    }</div>
   </section>
 
   <footer class="footer">
@@ -208,10 +218,10 @@ function escapeHtml(v: string) {
   );
 }
 
-export default function InvoicePreview({ invoice, services, companyName = "MOMENT ORGANIZER EVENTS MANAGING", companySubtitle = "Event Management & Event Decoration" }: PreviewProps) {
+export default function InvoicePreview({ invoice, services, companyName = "MOMENT ORGANIZER EVENTS MANAGING", companySubtitle = "Event Management & Event Decoration", companyLogo, companyStamp }: PreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const html = buildInvoiceHtml(invoice, services, companyName, companySubtitle);
+  const html = buildInvoiceHtml(invoice, services, companyName, companySubtitle, companyLogo || "", companyStamp || "");
 
   const handlePrint = () => {
     iframeRef.current?.contentWindow?.print();
