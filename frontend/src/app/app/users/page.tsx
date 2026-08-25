@@ -19,6 +19,11 @@ export default function UsersPage() {
   const [resetError, setResetError] = useState("");
   const [resetting, setResetting] = useState(false);
 
+  const [editUserId, setEditUserId] = useState<number | null>(null);
+  const [editUsername, setEditUsername] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editing, setEditing] = useState(false);
+
   const loadUsers = async () => {
     try {
       const data = await api.listUsers();
@@ -81,6 +86,23 @@ export default function UsersPage() {
       setResetError(err.message || "Failed to reset password");
     } finally {
       setResetting(false);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editUserId === null) return;
+    setEditing(true);
+    setEditError("");
+    try {
+      await api.updateUser(editUserId, { username: editUsername });
+      setEditUserId(null);
+      setEditUsername("");
+      await loadUsers();
+    } catch (err: any) {
+      setEditError(err.message || "Failed to update username");
+    } finally {
+      setEditing(false);
     }
   };
 
@@ -181,6 +203,12 @@ export default function UsersPage() {
                 </td>
                 <td className="px-4 py-3 text-right space-x-2">
                   <button
+                    onClick={() => { setEditUserId(u.id); setEditUsername(u.username); setEditError(""); }}
+                    className="text-xs text-gray-600 hover:text-gray-900"
+                  >
+                    Edit
+                  </button>
+                  <button
                     onClick={() => handleToggleActive(u)}
                     className="text-xs text-gray-600 hover:text-gray-900"
                   >
@@ -230,6 +258,43 @@ export default function UsersPage() {
                   className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
                 >
                   {resetting ? "Resetting..." : "Reset"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editUserId !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-4">Edit Username</h2>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              {editError && <div className="bg-red-50 text-red-700 text-sm p-3 rounded-md">{editError}</div>}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <input
+                  type="text"
+                  required
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setEditUserId(null)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editing}
+                  className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {editing ? "Saving..." : "Save"}
                 </button>
               </div>
             </form>

@@ -2,6 +2,7 @@ const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const request = require('supertest');
 const { setupTestDb, seedTestData, cleanupTestDb, getApp } = require('./helpers');
+const { getDb } = require('../src/database');
 
 describe('Users API', () => {
   before(() => {
@@ -459,6 +460,76 @@ describe('Users API', () => {
       await userAgent
         .get('/api/invoices')
         .expect(401);
+    });
+  });
+
+  describe('PUT /api/users/:id — username editing', () => {
+    it('#21 — admin updates username successfully', async () => {
+      const agent = request.agent(getApp());
+      await agent
+        .post('/api/auth/login')
+        .send({ username: 'testadmin', password: 'admin123' })
+        .expect(200);
+
+      await agent
+        .post('/api/users')
+        .send({ username: 'rename_me', password: 'pass1234', role: 'user' })
+        .expect(200);
+
+      const usersRes = await agent.get('/api/users').expect(200);
+      const target = usersRes.body.users.find(u => u.username === 'rename_me');
+
+      await agent
+        .put(`/api/users/${target.id}`)
+        .send({ username: 'renamed_user' })
+        .expect(200);
+
+      const updated = await agent.get('/api/users').expect(200);
+      const found = updated.body.users.find(u => u.id === target.id);
+      assert.strictEqual(found.username, 'renamed_user');
+    });
+
+    it('#22 — duplicate username returns 400', async () => {
+      const agent = request.agent(getApp());
+      await agent
+        .post('/api/auth/login')
+        .send({ username: 'testadmin', password: 'admin123' })
+        .expect(200);
+
+      const usersRes = await agent.get('/api/users').expect(200);
+      const target = usersRes.body.users.find(u => u.username === 'renamed_user');
+
+      await agent
+        .put(`/api/users/${target.id}`)
+        .send({ username: 'testadmin' })
+        .expect(400);
+    });
+
+    it('#23 — username update logged in activity_log', async () => {
+      const agent = request.agent(getApp());
+      await agent
+        .post('/api/auth/login')
+        .send({ username: 'testadmin', password: 'admin123' })
+        .expect(200);
+
+      const countBefore = getDb().prepare('SELECT COUNT(*) as c FROM activity_log').get().c;
+
+      const usersRes = await agent.get('/api/users').expect(200);
+      const target = usersRes.body.users.find(u => u.username === 'renamed_user');
+
+      await agent
+        .put(`/api/users/${target.id}`)
+        .send({ username: 'final_name' })
+        .expect(200);
+
+      const countAfter = getDb().prepare('SELECT COUNT(*) as c FROM activity_log').get().c;
+      assert.strictEqual(countAfter, countBefore + 1);
+
+      const last = getDb().prepare('SELECT * FROM activity_log ORDER BY id DESC LIMIT 1').get();
+      assert.strictEqual(last.action, 'user.update');
+      assert.strictEqual(last.entity_type, 'user');
+      assert.strictEqual(last.entity_id, target.id);
+      assert.ok(last.description.includes('renamed to final_name'));
     });
   });
 });

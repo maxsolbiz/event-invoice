@@ -49,16 +49,24 @@ router.post('/', (req, res) => {
   res.json({ id: result.lastInsertRowid, message: 'User created' });
 });
 
-// PUT /api/users/:id — update role and/or is_active
+// PUT /api/users/:id — update username, role and/or is_active
 router.put('/:id', (req, res) => {
-  const { role, is_active } = req.body;
+  const { username, role, is_active } = req.body;
   const id = Number(req.params.id);
 
   const db = getDb();
 
-  const user = db.prepare('SELECT id, role, is_active FROM users WHERE id = ?').get(id);
+  const user = db.prepare('SELECT id, username, role, is_active FROM users WHERE id = ?').get(id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
+  }
+
+  // Username uniqueness check
+  if (username && username !== user.username) {
+    const existing = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, id);
+    if (existing) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
   }
 
   // Last-admin protection — synchronous, no async boundary between check and update
@@ -82,17 +90,19 @@ router.put('/:id', (req, res) => {
 
   // Partial update — COALESCE keeps existing value if field not provided
   db.prepare(
-    'UPDATE users SET role = COALESCE(?, role), is_active = COALESCE(?, is_active) WHERE id = ?'
-  ).run(role ?? null, is_active ?? null, id);
+    'UPDATE users SET username = COALESCE(?, username), role = COALESCE(?, role), is_active = COALESCE(?, is_active) WHERE id = ?'
+  ).run(username ?? null, role ?? null, is_active ?? null, id);
 
   // Activity log — only if something actually changed (no-op guard)
-  if (role !== undefined || is_active !== undefined) {
-    const target = db.prepare('SELECT username FROM users WHERE id = ?').get(id);
+  if (username !== undefined || role !== undefined || is_active !== undefined) {
     const fragments = [];
+    if (username !== undefined && username !== user.username) fragments.push(`renamed to ${username}`);
     if (role !== undefined) fragments.push(`role to ${role}`);
     if (is_active !== undefined) fragments.push(is_active ? 'activated' : 'deactivated');
-    logActivity(db, req, 'user.update', 'user', id,
-      `Updated user ${target?.username || ''}: ${fragments.join(', ')}`);
+    if (fragments.length > 0) {
+      logActivity(db, req, 'user.update', 'user', id,
+        `Updated user ${user.username}: ${fragments.join(', ')}`);
+    }
   }
 
   res.json({ message: 'User updated' });

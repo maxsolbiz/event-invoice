@@ -81,7 +81,7 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  updateUser: (id: number, data: { is_active?: number; role?: string }) =>
+  updateUser: (id: number, data: { username?: string; is_active?: number; role?: string }) =>
     request<{ message: string }>(`/users/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
