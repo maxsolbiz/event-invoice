@@ -23,10 +23,20 @@ router.post('/login', (req, res) => {
     const passwordValid = bcrypt.compareSync(password, hashToCheck);
 
     if (!user || !passwordValid) {
+      try {
+        db.prepare(
+          'INSERT INTO login_events (user_id, username_attempted, success, failure_reason, ip_address, user_agent) VALUES (?, ?, 0, ?, ?, ?)'
+        ).run(user ? user.id : null, username.slice(0, 100), user ? 'wrong_password' : 'nonexistent', req.ip, req.headers['user-agent'] || null);
+      } catch (e) { /* logging failure must not break auth */ }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     if (user.is_active === 0) {
+      try {
+        db.prepare(
+          'INSERT INTO login_events (user_id, username_attempted, success, failure_reason, ip_address, user_agent) VALUES (?, ?, 0, ?, ?, ?)'
+        ).run(user.id, username.slice(0, 100), 'deactivated', req.ip, req.headers['user-agent'] || null);
+      } catch (e) { /* logging failure must not break auth */ }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -34,6 +44,12 @@ router.post('/login', (req, res) => {
     req.session.username = user.username;
     req.session.role = user.role;
     req.session.loginTimestamp = new Date().toISOString();
+
+    try {
+      db.prepare(
+        'INSERT INTO login_events (user_id, username_attempted, success, failure_reason, ip_address, user_agent) VALUES (?, ?, 1, NULL, ?, ?)'
+      ).run(user.id, username.slice(0, 100), req.ip, req.headers['user-agent'] || null);
+    } catch (e) { /* logging failure must not break auth */ }
 
     res.json({
       message: 'Login successful',

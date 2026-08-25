@@ -107,6 +107,20 @@ function initDb() {
     // Column already exists
   }
 
+  // Login events table
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS login_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      username_attempted TEXT NOT NULL,
+      success INTEGER NOT NULL DEFAULT 0,
+      failure_reason TEXT CHECK(failure_reason IN ('wrong_password', 'deactivated', 'nonexistent')),
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
   // Seed settings if empty
   const count = d.prepare('SELECT COUNT(*) as c FROM settings').get().c;
   if (count === 0) {
