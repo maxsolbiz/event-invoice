@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -28,9 +28,5 @@ function LoginGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      <LoginGate>{children}</LoginGate>
-    </AuthProvider>
-  );
+  return <LoginGate>{children}</LoginGate>;
 }
