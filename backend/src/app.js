@@ -57,7 +57,7 @@ function createApp(useMemoryDb = false) {
         dir: path.join(__dirname, '..', 'data'),
         table: 'sessions'
       }),
-      secret: process.env.SESSION_SECRET || 'test-secret-for-unit-tests',
+      secret: process.env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
       cookie: {
