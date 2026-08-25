@@ -60,6 +60,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updateClient: (id: number, data: { name?: string; contact?: string; address?: string }) =>
+    request<{ message: string }>(`/clients/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
   deleteClient: (id: number) =>
     request<{ message: string }>(`/clients/${id}`, { method: "DELETE" }),
 
@@ -192,6 +198,10 @@ export interface LoginEvent {
   failure_reason: string | null;
   ip_address: string | null;
   user_agent: string | null;
+  location_city: string | null;
+  location_region: string | null;
+  location_country: string | null;
+  location_coords: string | null;
   created_at: string;
 }
 
@@ -202,6 +212,11 @@ export interface ActivityLog {
   entity_type: string;
   entity_id: number;
   description: string;
+  ip_address: string | null;
+  location_city: string | null;
+  location_region: string | null;
+  location_country: string | null;
+  location_coords: string | null;
   created_at: string;
 }
 

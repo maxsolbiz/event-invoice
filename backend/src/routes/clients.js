@@ -71,10 +71,13 @@ router.put('/:id', (req, res) => {
     }
 
     const { name, contact, address } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Client name is required' });
+    }
     db.prepare('UPDATE clients SET name=?, contact=?, address=? WHERE id=?')
-      .run(name, contact || null, address || null, req.params.id);
+      .run(name.trim(), contact?.trim() || null, address?.trim() || null, req.params.id);
     logActivity(db, req, 'client.update', 'client', Number(req.params.id),
-      `Updated client ${name || ''}`);
+      `Updated client ${name.trim()}`);
     res.json({ message: 'Client updated' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update client' });

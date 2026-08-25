@@ -149,6 +149,19 @@ function initDb(seedAdmin = false) {
     );
   `);
 
+  // Schema migration: add geo columns to login_events
+  try { d.exec('ALTER TABLE login_events ADD COLUMN location_city TEXT'); } catch (e) {}
+  try { d.exec('ALTER TABLE login_events ADD COLUMN location_region TEXT'); } catch (e) {}
+  try { d.exec('ALTER TABLE login_events ADD COLUMN location_country TEXT'); } catch (e) {}
+  try { d.exec('ALTER TABLE login_events ADD COLUMN location_coords TEXT'); } catch (e) {}
+
+  // Schema migration: add geo columns to activity_log
+  try { d.exec('ALTER TABLE activity_log ADD COLUMN ip_address TEXT'); } catch (e) {}
+  try { d.exec('ALTER TABLE activity_log ADD COLUMN location_city TEXT'); } catch (e) {}
+  try { d.exec('ALTER TABLE activity_log ADD COLUMN location_region TEXT'); } catch (e) {}
+  try { d.exec('ALTER TABLE activity_log ADD COLUMN location_country TEXT'); } catch (e) {}
+  try { d.exec('ALTER TABLE activity_log ADD COLUMN location_coords TEXT'); } catch (e) {}
+
   // Seed settings if empty
   const count = d.prepare('SELECT COUNT(*) as c FROM settings').get().c;
   if (count === 0) {

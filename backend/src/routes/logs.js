@@ -10,7 +10,7 @@ function paginate(query, params, page, limit) {
   const db = getDb();
   const offset = (page - 1) * limit;
 
-  const countQuery = query.replace(/SELECT .+? FROM/, 'SELECT COUNT(*) as count FROM');
+  const countQuery = query.replace(/SELECT [\s\S]+? FROM/, 'SELECT COUNT(*) as count FROM');
   const { count } = db.prepare(countQuery).get(...params);
   const totalPages = Math.ceil(count / limit);
 
@@ -27,6 +27,12 @@ function normalizeDate(dateStr, appendTime) {
   }
   return dateStr;
 }
+
+const LOGIN_EVENT_COLUMNS = `id, username_attempted, success, failure_reason, ip_address, user_agent,
+  location_city, location_region, location_country, location_coords, created_at`;
+
+const ACTIVITY_COLUMNS = `id, username_snapshot, action, entity_type, entity_id, description,
+  ip_address, location_city, location_region, location_country, location_coords, created_at`;
 
 router.get('/login-events', (req, res) => {
   const db = getDb();
@@ -49,9 +55,13 @@ router.get('/login-events', (req, res) => {
     where.push('failure_reason = ?');
     params.push(req.query.failure_reason);
   }
+  if (req.query.ip) {
+    where.push('ip_address LIKE ?');
+    params.push(`%${req.query.ip}%`);
+  }
 
   const whereClause = where.length ? ' WHERE ' + where.join(' AND ') : '';
-  const query = 'SELECT id, username_attempted, success, failure_reason, ip_address, user_agent, created_at FROM login_events' + whereClause;
+  const query = `SELECT ${LOGIN_EVENT_COLUMNS} FROM login_events` + whereClause;
 
   const result = paginate(query, params, page, limit);
   res.json(result);
@@ -78,9 +88,13 @@ router.get('/activity', (req, res) => {
     where.push('entity_type = ?');
     params.push(req.query.entity_type);
   }
+  if (req.query.ip) {
+    where.push('ip_address LIKE ?');
+    params.push(`%${req.query.ip}%`);
+  }
 
   const whereClause = where.length ? ' WHERE ' + where.join(' AND ') : '';
-  const query = 'SELECT id, username_snapshot, action, entity_type, entity_id, description, created_at FROM activity_log' + whereClause;
+  const query = `SELECT ${ACTIVITY_COLUMNS} FROM activity_log` + whereClause;
 
   const result = paginate(query, params, page, limit);
   res.json(result);

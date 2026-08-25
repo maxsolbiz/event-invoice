@@ -127,4 +127,80 @@ describe('Clients API', () => {
         .expect(404);
     });
   });
+
+  describe('PUT /api/clients/:id', () => {
+    it('should update client fields', async () => {
+      const createRes = await adminAgent
+        .post('/api/clients')
+        .send({ name: 'Edit Me', contact: 'old', address: 'old addr' });
+
+      const clientId = createRes.body.id;
+
+      const res = await adminAgent
+        .put(`/api/clients/${clientId}`)
+        .send({ name: 'Edited Corp', contact: '+971509999999', address: 'New Address' })
+        .expect(200);
+
+      assert.strictEqual(res.body.message, 'Client updated');
+
+      // Verify update persisted
+      const getRes = await adminAgent.get(`/api/clients/${clientId}`).expect(200);
+      assert.strictEqual(getRes.body.client.name, 'Edited Corp');
+      assert.strictEqual(getRes.body.client.contact, '+971509999999');
+      assert.strictEqual(getRes.body.client.address, 'New Address');
+    });
+
+    it('should return 404 for nonexistent client', async () => {
+      await adminAgent
+        .put('/api/clients/99999')
+        .send({ name: 'Nobody' })
+        .expect(404);
+    });
+
+    it('should reject empty name with 400', async () => {
+      const createRes = await adminAgent
+        .post('/api/clients')
+        .send({ name: 'Validate Me' });
+
+      await adminAgent
+        .put(`/api/clients/${createRes.body.id}`)
+        .send({ name: '' })
+        .expect(400);
+    });
+
+    it('should not mutate invoice snapshots when client name changes', async () => {
+      // Create client
+      const clientRes = await adminAgent
+        .post('/api/clients')
+        .send({ name: 'Snapshot Client' });
+
+      const clientId = clientRes.body.id;
+
+      // Create invoice linked to client
+      const invoiceRes = await adminAgent
+        .post('/api/invoices')
+        .send({
+          pi_no: 'SNAP-001',
+          invoice_date: '2026-08-25',
+          currency: 'AED',
+          client_name: 'Snapshot Client',
+          client_id: clientId,
+          vat: 0,
+          services: [{ description: 'Svc', qty: 1, unit_price: 100 }]
+        });
+
+      // Rename the client
+      await adminAgent
+        .put(`/api/clients/${clientId}`)
+        .send({ name: 'Renamed Client' })
+        .expect(200);
+
+      // Verify invoice still has original name
+      const invoiceGetRes = await adminAgent
+        .get(`/api/invoices/${invoiceRes.body.id}`)
+        .expect(200);
+
+      assert.strictEqual(invoiceGetRes.body.invoice.client_name, 'Snapshot Client');
+    });
+  });
 });

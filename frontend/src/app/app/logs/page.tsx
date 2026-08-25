@@ -6,6 +6,12 @@ import { useAuth } from "@/lib/auth-context";
 
 type Tab = "login" | "activity";
 
+function LocationCell({ city, region, country }: { city: string | null; region: string | null; country: string | null }) {
+  if (!city && !region && !country) return <td className="px-4 py-3 text-gray-400">—</td>;
+  const parts = [city, region, country].filter(Boolean);
+  return <td className="px-4 py-3 text-sm" title={parts.join(", ")}>{parts.join(", ")}</td>;
+}
+
 export default function LogsPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("login");
@@ -18,8 +24,8 @@ export default function LogsPage() {
   const [loginPage, setLoginPage] = useState(1);
   const [activityPage, setActivityPage] = useState(1);
 
-  const [loginFilters, setLoginFilters] = useState({ from: "", to: "", success: "", failure_reason: "" });
-  const [activityFilters, setActivityFilters] = useState({ from: "", to: "", action: "", entity_type: "" });
+  const [loginFilters, setLoginFilters] = useState({ from: "", to: "", success: "", failure_reason: "", ip: "" });
+  const [activityFilters, setActivityFilters] = useState({ from: "", to: "", action: "", entity_type: "", ip: "" });
 
   const [appliedLoginFilters, setAppliedLoginFilters] = useState<Record<string, string>>({});
   const [appliedActivityFilters, setAppliedActivityFilters] = useState<Record<string, string>>({});
@@ -66,6 +72,7 @@ export default function LogsPage() {
     if (loginFilters.to) params.to = loginFilters.to;
     if (loginFilters.success) params.success = loginFilters.success;
     if (loginFilters.failure_reason) params.failure_reason = loginFilters.failure_reason;
+    if (loginFilters.ip) params.ip = loginFilters.ip;
     setAppliedLoginFilters(params);
     setLoginPage(1);
     setLoginData(null);
@@ -77,6 +84,7 @@ export default function LogsPage() {
     if (activityFilters.to) params.to = activityFilters.to;
     if (activityFilters.action) params.action = activityFilters.action;
     if (activityFilters.entity_type) params.entity_type = activityFilters.entity_type;
+    if (activityFilters.ip) params.ip = activityFilters.ip;
     setAppliedActivityFilters(params);
     setActivityPage(1);
     setActivityData(null);
@@ -104,7 +112,7 @@ export default function LogsPage() {
   const hasMore = currentData ? showingCount < total : false;
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-6xl">
       <h1 className="text-2xl font-bold mb-6">Logs</h1>
 
       {error && <div className="bg-red-50 text-red-700 text-sm p-3 rounded-md mb-4">{error}</div>}
@@ -174,6 +182,16 @@ export default function LogsPage() {
                 <option value="nonexistent">Nonexistent</option>
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">IP</label>
+              <input
+                type="text"
+                placeholder="Search IP..."
+                value={loginFilters.ip}
+                onChange={(e) => setLoginFilters({ ...loginFilters, ip: e.target.value })}
+                className="px-3 py-1.5 border rounded-md text-sm w-36"
+              />
+            </div>
             <button
               onClick={handleApplyLoginFilters}
               className="bg-gray-900 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-800"
@@ -229,6 +247,16 @@ export default function LogsPage() {
                 <option value="user">User</option>
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">IP</label>
+              <input
+                type="text"
+                placeholder="Search IP..."
+                value={activityFilters.ip}
+                onChange={(e) => setActivityFilters({ ...activityFilters, ip: e.target.value })}
+                className="px-3 py-1.5 border rounded-md text-sm w-36"
+              />
+            </div>
             <button
               onClick={handleApplyActivityFilters}
               className="bg-gray-900 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-800"
@@ -243,60 +271,68 @@ export default function LogsPage() {
         {loading ? (
           <div className="p-6 text-center text-gray-500 text-sm">Loading...</div>
         ) : currentData && currentData.rows.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  {tab === "login" ? (
+                    <>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Time</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Username</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Result</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Reason</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">IP</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">User Agent</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Time</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">User</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Action</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Entity</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Description</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">IP</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y">
                 {tab === "login" ? (
-                  <>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Time</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Username</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Result</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Reason</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">IP</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">User Agent</th>
-                  </>
+                  (currentData.rows as LoginEvent[]).map((row) => (
+                    <tr key={row.id}>
+                      <td className="px-4 py-3 whitespace-nowrap">{row.created_at}</td>
+                      <td className="px-4 py-3">{row.username_attempted}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${row.success ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                          {row.success ? "Success" : "Failed"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">{row.failure_reason || "\u2014"}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{row.ip_address || "\u2014"}</td>
+                      <LocationCell city={row.location_city} region={row.location_region} country={row.location_country} />
+                      <td className="px-4 py-3" title={row.user_agent || ""}>
+                        {row.user_agent ? (row.user_agent.length > 40 ? row.user_agent.slice(0, 40) + "\u2026" : row.user_agent) : "\u2014"}
+                      </td>
+                    </tr>
+                  ))
                 ) : (
-                  <>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Time</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">User</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Action</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Entity</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Description</th>
-                  </>
+                  (currentData.rows as ActivityLog[]).map((row) => (
+                    <tr key={row.id}>
+                      <td className="px-4 py-3 whitespace-nowrap">{row.created_at}</td>
+                      <td className="px-4 py-3">{row.username_snapshot}</td>
+                      <td className="px-4 py-3"><code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{row.action}</code></td>
+                      <td className="px-4 py-3">{row.entity_type} #{row.entity_id}</td>
+                      <td className="px-4 py-3">{row.description}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{row.ip_address || "\u2014"}</td>
+                      <LocationCell city={row.location_city} region={row.location_region} country={row.location_country} />
+                    </tr>
+                  ))
                 )}
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {tab === "login" ? (
-                (currentData.rows as LoginEvent[]).map((row) => (
-                  <tr key={row.id}>
-                    <td className="px-4 py-3 whitespace-nowrap">{row.created_at}</td>
-                    <td className="px-4 py-3">{row.username_attempted}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-1 rounded ${row.success ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                        {row.success ? "Success" : "Failed"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{row.failure_reason || "—"}</td>
-                    <td className="px-4 py-3">{row.ip_address || "—"}</td>
-                    <td className="px-4 py-3" title={row.user_agent || ""}>
-                      {row.user_agent ? (row.user_agent.length > 40 ? row.user_agent.slice(0, 40) + "…" : row.user_agent) : "—"}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                (currentData.rows as ActivityLog[]).map((row) => (
-                  <tr key={row.id}>
-                    <td className="px-4 py-3 whitespace-nowrap">{row.created_at}</td>
-                    <td className="px-4 py-3">{row.username_snapshot}</td>
-                    <td className="px-4 py-3"><code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{row.action}</code></td>
-                    <td className="px-4 py-3">{row.entity_type} #{row.entity_id}</td>
-                    <td className="px-4 py-3">{row.description}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div className="p-6 text-center text-gray-500 text-sm">No logs found</div>
         )}

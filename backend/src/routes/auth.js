@@ -1,11 +1,38 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const { getDb } = require('../database');
+const { extractIP } = require('../lib/activity');
+const { getGeoLocation } = require('../lib/geo');
 
 const router = express.Router();
 
 // Dummy hash for timing normalization when user not found
 const DUMMY_HASH = '$2b$12$' + 'x'.repeat(53);
+
+function logLoginEvent(db, userId, username, success, failureReason, ip, userAgent, req) {
+  let rowId = null;
+  try {
+    const result = db.prepare(
+      `INSERT INTO login_events
+       (user_id, username_attempted, success, failure_reason, ip_address, user_agent,
+        location_city, location_region, location_country, location_coords)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)`
+    ).run(userId, username, success ? 1 : 0, failureReason, ip, userAgent);
+    rowId = result.lastInsertRowid;
+  } catch (e) { /* logging failure must not break auth */ return; }
+
+  // Fire-and-forget: enrich with geo data
+  getGeoLocation(ip).then((geo) => {
+    if (!geo || !rowId) return;
+    try {
+      db.prepare(
+        `UPDATE login_events
+         SET location_city = ?, location_region = ?, location_country = ?, location_coords = ?
+         WHERE id = ?`
+      ).run(geo.city, geo.region, geo.country, geo.coords, rowId);
+    } catch (e) { /* ignore */ }
+  }).catch(() => {});
+}
 
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
@@ -15,6 +42,9 @@ router.post('/login', (req, res) => {
   }
 
   const db = getDb();
+  const ip = extractIP(req);
+  const userAgent = req.headers['user-agent'] || null;
+
   try {
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 
@@ -23,20 +53,13 @@ router.post('/login', (req, res) => {
     const passwordValid = bcrypt.compareSync(password, hashToCheck);
 
     if (!user || !passwordValid) {
-      try {
-        db.prepare(
-          'INSERT INTO login_events (user_id, username_attempted, success, failure_reason, ip_address, user_agent) VALUES (?, ?, 0, ?, ?, ?)'
-        ).run(user ? user.id : null, username.slice(0, 100), user ? 'wrong_password' : 'nonexistent', req.ip, req.headers['user-agent'] || null);
-      } catch (e) { /* logging failure must not break auth */ }
+      logLoginEvent(db, user ? user.id : null, username.slice(0, 100), false,
+        user ? 'wrong_password' : 'nonexistent', ip, userAgent, req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     if (user.is_active === 0) {
-      try {
-        db.prepare(
-          'INSERT INTO login_events (user_id, username_attempted, success, failure_reason, ip_address, user_agent) VALUES (?, ?, 0, ?, ?, ?)'
-        ).run(user.id, username.slice(0, 100), 'deactivated', req.ip, req.headers['user-agent'] || null);
-      } catch (e) { /* logging failure must not break auth */ }
+      logLoginEvent(db, user.id, username.slice(0, 100), false, 'deactivated', ip, userAgent, req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -45,11 +68,7 @@ router.post('/login', (req, res) => {
     req.session.role = user.role;
     req.session.loginTimestamp = new Date().toISOString();
 
-    try {
-      db.prepare(
-        'INSERT INTO login_events (user_id, username_attempted, success, failure_reason, ip_address, user_agent) VALUES (?, ?, 1, NULL, ?, ?)'
-      ).run(user.id, username.slice(0, 100), req.ip, req.headers['user-agent'] || null);
-    } catch (e) { /* logging failure must not break auth */ }
+    logLoginEvent(db, user.id, username.slice(0, 100), true, null, ip, userAgent, req);
 
     res.json({
       message: 'Login successful',
