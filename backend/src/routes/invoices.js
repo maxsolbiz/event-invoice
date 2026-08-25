@@ -130,27 +130,31 @@ router.post('/', (req, res) => {
     // Auto-generate PI number — ignore any client-provided value
     const pi_no = generateNextPiNo(db);
 
-    const result = db.prepare(`
-      INSERT INTO invoices(pi_no, invoice_date, currency, client_name, client_contact,
+    let invoiceId;
+    const createInvoice = db.transaction(() => {
+      const result = db.prepare(`
+        INSERT INTO invoices(pi_no, invoice_date, currency, client_name, client_contact,
+          venue, event_date, event_type, event_note, client_address,
+          vat, payment_terms, notes, subtotal, total, client_id, created_by)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `).run(
+        pi_no, invoice_date, currency, client_name, client_contact,
         venue, event_date, event_type, event_note, client_address,
-        vat, payment_terms, notes, subtotal, total, client_id, created_by)
-      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `).run(
-      pi_no, invoice_date, currency, client_name, client_contact,
-      venue, event_date, event_type, event_note, client_address,
-      Number(vat), payment_terms, notes, calc.subtotal, calc.total,
-      client_id || null, req.session.userId
-    );
+        Number(vat), payment_terms, notes, calc.subtotal, calc.total,
+        client_id || null, req.session.userId
+      );
 
-    const invoiceId = result.lastInsertRowid;
+      invoiceId = result.lastInsertRowid;
 
-    const insertService = db.prepare(`
-      INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
-      VALUES(?,?,?,?,?,?)
-    `);
-    calc.cleanedServices.forEach((s, i) => {
-      insertService.run(invoiceId, i + 1, s.description, s.qty, s.unit_price, s.amount);
+      const insertService = db.prepare(`
+        INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
+        VALUES(?,?,?,?,?,?)
+      `);
+      calc.cleanedServices.forEach((s, i) => {
+        insertService.run(invoiceId, i + 1, s.description, s.qty, s.unit_price, s.amount);
+      });
     });
+    createInvoice();
 
     logActivity(db, req, 'invoice.create', 'invoice', invoiceId,
       `Created invoice ${pi_no} for ${client_name || ''}`);
@@ -191,27 +195,30 @@ router.put('/:id', (req, res) => {
     // PI number is immutable — always use the existing value
     const pi_no = existing.pi_no;
 
-    db.prepare(`
-      UPDATE invoices SET pi_no=?, invoice_date=?, currency=?, client_name=?, client_contact=?,
-        venue=?, event_date=?, event_type=?, event_note=?, client_address=?,
-        vat=?, payment_terms=?, notes=?, subtotal=?, total=?, client_id=?
-      WHERE id=?
-    `).run(
-      pi_no, invoice_date, currency, client_name, client_contact,
-      venue, event_date, event_type, event_note, client_address,
-      Number(vat), payment_terms, notes, calc.subtotal, calc.total,
-      client_id || null, req.params.id
-    );
+    const updateInvoice = db.transaction(() => {
+      db.prepare(`
+        UPDATE invoices SET pi_no=?, invoice_date=?, currency=?, client_name=?, client_contact=?,
+          venue=?, event_date=?, event_type=?, event_note=?, client_address=?,
+          vat=?, payment_terms=?, notes=?, subtotal=?, total=?, client_id=?
+        WHERE id=?
+      `).run(
+        pi_no, invoice_date, currency, client_name, client_contact,
+        venue, event_date, event_type, event_note, client_address,
+        Number(vat), payment_terms, notes, calc.subtotal, calc.total,
+        client_id || null, req.params.id
+      );
 
-    // Replace services
-    db.prepare('DELETE FROM invoice_services WHERE invoice_id = ?').run(req.params.id);
-    const insertService = db.prepare(`
-      INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
-      VALUES(?,?,?,?,?,?)
-    `);
-    calc.cleanedServices.forEach((s, i) => {
-      insertService.run(req.params.id, i + 1, s.description, s.qty, s.unit_price, s.amount);
+      // Replace services
+      db.prepare('DELETE FROM invoice_services WHERE invoice_id = ?').run(req.params.id);
+      const insertService = db.prepare(`
+        INSERT INTO invoice_services(invoice_id, sort_order, description, qty, unit_price, amount)
+        VALUES(?,?,?,?,?,?)
+      `);
+      calc.cleanedServices.forEach((s, i) => {
+        insertService.run(req.params.id, i + 1, s.description, s.qty, s.unit_price, s.amount);
+      });
     });
+    updateInvoice();
 
     logActivity(db, req, 'invoice.update', 'invoice', Number(req.params.id),
       `Updated invoice ${pi_no} for ${client_name || ''}`);
