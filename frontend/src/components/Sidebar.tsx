@@ -18,6 +18,7 @@ export default function Sidebar() {
   ];
 
   if (user.role === "admin") {
+    navItems.push({ href: "/app/users", label: "Users" });
     navItems.push({ href: "/app/settings", label: "Settings" });
   }
 

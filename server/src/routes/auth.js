@@ -26,9 +26,14 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    if (user.is_active === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
     req.session.userId = user.id;
     req.session.username = user.username;
     req.session.role = user.role;
+    req.session.loginTimestamp = new Date().toISOString();
 
     res.json({
       message: 'Login successful',

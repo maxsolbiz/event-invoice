@@ -93,6 +93,20 @@ function initDb() {
     );
   `);
 
+  // Schema migration: add is_active column
+  try {
+    d.exec('ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1');
+  } catch (e) {
+    // Column already exists
+  }
+
+  // Schema migration: add password_changed_at column
+  try {
+    d.exec('ALTER TABLE users ADD COLUMN password_changed_at TEXT');
+  } catch (e) {
+    // Column already exists
+  }
+
   // Seed settings if empty
   const count = d.prepare('SELECT COUNT(*) as c FROM settings').get().c;
   if (count === 0) {

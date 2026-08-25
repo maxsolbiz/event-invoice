@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const invoiceRoutes = require('./routes/invoices');
 const clientRoutes = require('./routes/clients');
 const settingsRoutes = require('./routes/settings');
+const usersRoutes = require('./routes/users');
 
 function createApp(useMemoryDb = false) {
   const app = express();
@@ -61,22 +62,25 @@ function createApp(useMemoryDb = false) {
     }));
   }
 
-  // Rate limiting for login ONLY
-  const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: { error: 'Too many login attempts, please try again later' },
-    standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req) => req.ip
-  });
+  // Rate limiting for login ONLY (disabled in test mode)
+  if (!useMemoryDb) {
+    const loginLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 10,
+      message: { error: 'Too many login attempts, please try again later' },
+      standardHeaders: true,
+      legacyHeaders: false,
+      keyGenerator: (req) => req.ip
+    });
+    app.use('/api/auth/login', loginLimiter);
+  }
 
   // Routes
-  app.use('/api/auth/login', loginLimiter);
   app.use('/api/auth', authRoutes);
   app.use('/api/invoices', invoiceRoutes);
   app.use('/api/clients', clientRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/users', usersRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {

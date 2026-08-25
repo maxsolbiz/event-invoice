@@ -71,6 +71,27 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  // Users
+  listUsers: () => request<{ users: User[] }>("/users"),
+
+  createUser: (data: { username: string; password: string; role: string }) =>
+    request<{ id: number; message: string }>("/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateUser: (id: number, data: { is_active?: number; role?: string }) =>
+    request<{ message: string }>(`/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  resetPassword: (id: number, password: string) =>
+    request<{ message: string }>(`/users/${id}/password`, {
+      method: "PUT",
+      body: JSON.stringify({ password }),
+    }),
 };
 
 // Types
@@ -78,6 +99,7 @@ export interface User {
   id: number;
   username: string;
   role: "admin" | "user";
+  is_active: number;
   created_at: string;
 }
 
