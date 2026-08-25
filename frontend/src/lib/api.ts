@@ -92,6 +92,17 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ password }),
     }),
+
+  // Logs
+  listLoginEvents: (params?: Record<string, string>) => {
+    const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request<PaginatedResponse<LoginEvent>>(`/logs/login-events${qs}`);
+  },
+
+  listActivity: (params?: Record<string, string>) => {
+    const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request<PaginatedResponse<ActivityLog>>(`/logs/activity${qs}`);
+  },
 };
 
 // Types
@@ -170,4 +181,34 @@ export interface Settings {
   default_vat: number;
   default_payment_terms: string;
   default_notes: string;
+}
+
+export interface LoginEvent {
+  id: number;
+  username_attempted: string;
+  success: number;
+  failure_reason: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface ActivityLog {
+  id: number;
+  username_snapshot: string;
+  action: string;
+  entity_type: string;
+  entity_id: number;
+  description: string;
+  created_at: string;
+}
+
+export interface PaginatedResponse<T> {
+  rows: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

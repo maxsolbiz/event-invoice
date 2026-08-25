@@ -10,6 +10,7 @@ const invoiceRoutes = require('./routes/invoices');
 const clientRoutes = require('./routes/clients');
 const settingsRoutes = require('./routes/settings');
 const usersRoutes = require('./routes/users');
+const logsRoutes = require('./routes/logs');
 
 function createApp(useMemoryDb = false) {
   const app = express();
@@ -81,6 +82,7 @@ function createApp(useMemoryDb = false) {
   app.use('/api/clients', clientRoutes);
   app.use('/api/settings', settingsRoutes);
   app.use('/api/users', usersRoutes);
+  app.use('/api/logs', logsRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {
