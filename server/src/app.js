@@ -20,10 +20,16 @@ function createApp(useMemoryDb = false) {
     resetDb();
     getTestDb();
   }
-  initDb();
+  initDb(!useMemoryDb);
 
   // Middleware
   app.use(express.json({ limit: '1mb' }));
+
+  // Trust first proxy (Apache) for secure cookies behind HTTPS termination
+  if (!useMemoryDb) {
+    app.set('trust proxy', 1);
+  }
+
   app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:8080',
     credentials: true

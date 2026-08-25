@@ -29,7 +29,7 @@ function resetDb() {
   }
 }
 
-function initDb() {
+function initDb(seedAdmin = false) {
   const d = getDb();
 
   d.exec(`
@@ -161,6 +161,17 @@ function initDb() {
       'As agreed with the client.',
       'This Proforma Invoice is issued for the above-mentioned event service.'
     );
+  }
+
+  // Seed default admin user if no users exist (production only)
+  if (seedAdmin) {
+    const userCount = d.prepare('SELECT COUNT(*) as c FROM users').get().c;
+    if (userCount === 0) {
+      const bcrypt = require('bcrypt');
+      const hash = bcrypt.hashSync('admin123', 12);
+      d.prepare('INSERT INTO users(username, password_hash, role) VALUES(?,?,?)')
+        .run('admin', hash, 'admin');
+    }
   }
 }
 
