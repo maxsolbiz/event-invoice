@@ -70,6 +70,9 @@ export default function InvoicesPage() {
                     <Link href={`/app/invoices/${inv.id}`} className="text-blue-600 hover:text-blue-800 text-sm mr-3">
                       View
                     </Link>
+                    <Link href={`/app/invoices/${inv.id}`} className="text-gray-600 hover:text-gray-800 text-sm mr-3">
+                      Edit
+                    </Link>
                     <button onClick={() => handleDelete(inv.id)} className="text-red-600 hover:text-red-800 text-sm">
                       Delete
                     </button>
