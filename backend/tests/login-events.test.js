@@ -201,4 +201,41 @@ describe('Login Events', () => {
     assert.strictEqual(row.username_attempted.length, 100);
     assert.strictEqual(row.username_attempted, 'a'.repeat(100));
   });
+
+  it('#11 — failed login enriches geo fields via async UPDATE', async () => {
+    const db = getDb();
+
+    const originalFetch = global.fetch;
+    global.fetch = async () => ({
+      ok: true,
+      json: async () => ({ city: 'LoginCity', region: 'LoginRegion', country: 'LC', loc: '26.0,56.0' })
+    });
+
+    try {
+      await request(getApp())
+        .post('/api/auth/login')
+        .set('X-Forwarded-For', '93.184.216.34')
+        .send({ username: 'testadmin', password: 'wrong' })
+        .expect(401);
+
+      const rowId = db.prepare('SELECT id FROM login_events ORDER BY id DESC LIMIT 1').get().id;
+
+      const start = Date.now();
+      let row;
+      while (Date.now() - start < 2000) {
+        await new Promise(r => setTimeout(r, 20));
+        row = db.prepare(
+          'SELECT ip_address, location_city, location_region, location_country FROM login_events WHERE id = ?'
+        ).get(rowId);
+        if (row && row.location_city) break;
+      }
+
+      assert.strictEqual(row.ip_address, '93.184.216.34');
+      assert.strictEqual(row.location_city, 'LoginCity');
+      assert.strictEqual(row.location_region, 'LoginRegion');
+      assert.strictEqual(row.location_country, 'LC');
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

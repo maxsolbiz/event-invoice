@@ -309,7 +309,50 @@ describe('Activity Log', () => {
 
   // --- username_snapshot persists ---
 
-  it('#17 — username_snapshot persists after user deactivation', async () => {
+  it('#17 — public IP populates ip_address and geo columns via async UPDATE', async () => {
+    const db = getDb();
+    const { logActivity } = require('../src/lib/activity');
+
+    const originalFetch = global.fetch;
+    global.fetch = async () => ({
+      ok: true,
+      json: async () => ({ city: 'TestCity', region: 'TestRegion', country: 'TC', loc: '25.0,55.0' })
+    });
+
+    try {
+      const publicIp = '93.184.216.34';
+      const fakeReq = {
+        session: { userId: getTestadminId(), username: 'testadmin' },
+        headers: { 'x-forwarded-for': publicIp },
+        ip: null,
+        connection: null,
+      };
+      logActivity(db, fakeReq, 'test.geo', 'test', 9999, 'Geo enrichment test');
+
+      const rowId = db.prepare(
+        "SELECT id FROM activity_log WHERE action = 'test.geo' ORDER BY id DESC LIMIT 1"
+      ).get().id;
+
+      const start = Date.now();
+      let row;
+      while (Date.now() - start < 1000) {
+        row = db.prepare(
+          'SELECT ip_address, location_city, location_region, location_country FROM activity_log WHERE id = ?'
+        ).get(rowId);
+        if (row && row.location_city) break;
+        await new Promise(r => setTimeout(r, 10));
+      }
+
+      assert.strictEqual(row.ip_address, publicIp);
+      assert.strictEqual(row.location_city, 'TestCity');
+      assert.strictEqual(row.location_region, 'TestRegion');
+      assert.strictEqual(row.location_country, 'TC');
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('#18 — username_snapshot persists after user deactivation', async () => {
     // Create a user to later deactivate
     await admin
       .post('/api/users')

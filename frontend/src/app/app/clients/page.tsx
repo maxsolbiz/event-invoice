@@ -160,7 +160,7 @@ export default function ClientsPage() {
             <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-semibold">Edit Client</h2>
             </div>
-            <form onSubmit={handleEdit} className="px-6 py-4 space-y-4">
+            <form id="edit-client-form" onSubmit={handleEdit} className="px-6 py-4 space-y-4">
               {editError && <div className="bg-red-50 text-red-700 text-sm p-3 rounded-md">{editError}</div>}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
