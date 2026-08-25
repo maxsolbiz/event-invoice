@@ -1,0 +1,5 @@
+# Stray files from legacy invoice generator work
+*.pdf
+*.png
+invoice.html
+round1_diff.txt
