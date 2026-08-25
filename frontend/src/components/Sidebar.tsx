@@ -11,12 +11,12 @@ export default function Sidebar() {
   if (!user) return null;
 
   const navItems = [
-    { href: "/invoices", label: "Invoices" },
-    { href: "/clients", label: "Clients" },
+    { href: "/app/invoices", label: "Invoices" },
+    { href: "/app/clients", label: "Clients" },
   ];
 
   if (user.role === "admin") {
-    navItems.push({ href: "/settings", label: "Settings" });
+    navItems.push({ href: "/app/settings", label: "Settings" });
   }
 
   return (
