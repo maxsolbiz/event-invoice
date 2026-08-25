@@ -122,7 +122,7 @@ export default function UsersPage() {
               <input
                 type="password"
                 required
-                minLength={8}
+                minLength={6}
                 value={createForm.password}
                 onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
@@ -168,8 +168,7 @@ export default function UsersPage() {
                   <select
                     value={u.role}
                     onChange={(e) => handleRoleChange(u, e.target.value)}
-                    disabled={u.id === user?.id}
-                    className="border rounded px-2 py-1 text-xs disabled:opacity-50"
+                    className="border rounded px-2 py-1 text-xs"
                   >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
@@ -183,8 +182,7 @@ export default function UsersPage() {
                 <td className="px-4 py-3 text-right space-x-2">
                   <button
                     onClick={() => handleToggleActive(u)}
-                    disabled={u.id === user?.id}
-                    className="text-xs text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                    className="text-xs text-gray-600 hover:text-gray-900"
                   >
                     {u.is_active ? "Deactivate" : "Activate"}
                   </button>
@@ -212,7 +210,7 @@ export default function UsersPage() {
                 <input
                   type="password"
                   required
-                  minLength={8}
+                  minLength={6}
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"

@@ -255,6 +255,102 @@ describe('Users API', () => {
     });
   });
 
+  describe('Admin self-change when second admin exists', () => {
+    it('#19 — admin can self-deactivate when another active admin exists', async () => {
+      // Create a second admin first (using testadmin)
+      const setup = request.agent(getApp());
+      await setup
+        .post('/api/auth/login')
+        .send({ username: 'testadmin', password: 'admin123' })
+        .expect(200);
+
+      await setup
+        .post('/api/users')
+        .send({ username: 'selfdeactivate', password: 'pass1234', role: 'admin' })
+        .expect(200);
+
+      // Verifier logs in as the NEW admin (not testadmin) so session survives testadmin's deactivation
+      const verifier = request.agent(getApp());
+      await verifier
+        .post('/api/auth/login')
+        .send({ username: 'selfdeactivate', password: 'pass1234' })
+        .expect(200);
+
+      // Log in as testadmin and self-deactivate
+      const selfAgent = request.agent(getApp());
+      await selfAgent
+        .post('/api/auth/login')
+        .send({ username: 'testadmin', password: 'admin123' })
+        .expect(200);
+
+      const meRes = await selfAgent.get('/api/auth/me').expect(200);
+      const myId = meRes.body.user.id;
+
+      await selfAgent
+        .put(`/api/users/${myId}`)
+        .send({ is_active: 0 })
+        .expect(200);
+
+      // Verifier (authenticated as selfdeactivate, still active) confirms testadmin is inactive
+      const usersRes = await verifier.get('/api/users').expect(200);
+      const me = usersRes.body.users.find(u => u.id === myId);
+      assert.strictEqual(me.is_active, 0);
+
+      // Restore testadmin for remaining tests
+      await verifier
+        .put(`/api/users/${myId}`)
+        .send({ is_active: 1 })
+        .expect(200);
+    });
+
+    it('#20 — admin can self-demotion when another active admin exists', async () => {
+      // Create a second admin first (using testadmin)
+      const setup = request.agent(getApp());
+      await setup
+        .post('/api/auth/login')
+        .send({ username: 'testadmin', password: 'admin123' })
+        .expect(200);
+
+      await setup
+        .post('/api/users')
+        .send({ username: 'selfdemote', password: 'pass1234', role: 'admin' })
+        .expect(200);
+
+      // Verifier logs in as the NEW admin (not testadmin) so session survives testadmin's demotion
+      const verifier = request.agent(getApp());
+      await verifier
+        .post('/api/auth/login')
+        .send({ username: 'selfdemote', password: 'pass1234' })
+        .expect(200);
+
+      // Log in as testadmin and self-demotion to user
+      const selfAgent = request.agent(getApp());
+      await selfAgent
+        .post('/api/auth/login')
+        .send({ username: 'testadmin', password: 'admin123' })
+        .expect(200);
+
+      const meRes = await selfAgent.get('/api/auth/me').expect(200);
+      const myId = meRes.body.user.id;
+
+      await selfAgent
+        .put(`/api/users/${myId}`)
+        .send({ role: 'user' })
+        .expect(200);
+
+      // Verifier (authenticated as selfdemote, still active) confirms testadmin is now role 'user'
+      const usersRes = await verifier.get('/api/users').expect(200);
+      const me = usersRes.body.users.find(u => u.id === myId);
+      assert.strictEqual(me.role, 'user');
+
+      // Restore testadmin to admin for remaining tests
+      await verifier
+        .put(`/api/users/${myId}`)
+        .send({ role: 'admin' })
+        .expect(200);
+    });
+  });
+
   describe('Deactivated user login', () => {
     it('#12 — deactivated user gets generic 401', async () => {
       const adminAgent = request.agent(getApp());
