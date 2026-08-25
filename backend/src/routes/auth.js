@@ -63,16 +63,23 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    req.session.userId = user.id;
-    req.session.username = user.username;
-    req.session.role = user.role;
-    req.session.loginTimestamp = new Date().toISOString();
+    req.session.regenerate((err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Login failed' });
+      }
 
-    logLoginEvent(db, user.id, username.slice(0, 100), true, null, ip, userAgent, req);
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      req.session.role = user.role;
+      req.session.loginTimestamp = new Date().toISOString();
 
-    res.json({
-      message: 'Login successful',
-      user: { id: user.id, username: user.username, role: user.role }
+      logLoginEvent(db, user.id, username.slice(0, 100), true, null, ip, userAgent, req);
+
+      res.json({
+        message: 'Login successful',
+        user: { id: user.id, username: user.username, role: user.role },
+        must_change_password: !user.password_changed_at
+      });
     });
   } finally {
     // No db.close() — using shared connection
@@ -96,13 +103,16 @@ router.get('/me', (req, res) => {
 
   const db = getDb();
   try {
-    const user = db.prepare('SELECT id, username, role, created_at FROM users WHERE id = ?').get(req.session.userId);
+    const user = db.prepare('SELECT id, username, role, password_changed_at, created_at FROM users WHERE id = ?').get(req.session.userId);
 
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    res.json({ user });
+    res.json({
+      user: { id: user.id, username: user.username, role: user.role, created_at: user.created_at },
+      must_change_password: !user.password_changed_at
+    });
   } finally {
     // No db.close() — using shared connection
   }
