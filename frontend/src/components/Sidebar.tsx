@@ -67,7 +67,7 @@ export default function Sidebar() {
       {/* Mobile hamburger */}
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-50 p-2 bg-gray-900 text-white rounded-md shadow-lg"
+        className="md:hidden fixed top-3 left-3 z-[60] p-2 bg-gray-900 text-white rounded-md shadow-lg"
         aria-label="Open menu"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +85,7 @@ export default function Sidebar() {
 
       {/* Mobile drawer */}
       <aside
-        className={`md:hidden fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white p-4 flex flex-col transform transition-transform duration-200 ${
+        className={`md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white p-4 flex flex-col transform transition-transform duration-200 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

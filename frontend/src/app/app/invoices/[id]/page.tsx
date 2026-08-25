@@ -11,6 +11,19 @@ interface ServiceRow {
   unit_price: number;
 }
 
+const PREDEFINED_SERVICES = [
+  { name: "Event Planning & Management", qty: 1, price: 2500 },
+  { name: "Venue Decoration & Themed Setup", qty: 1, price: 1000 },
+  { name: "Stage & Backdrop Setup", qty: 1, price: 2000 },
+  { name: "Sound System & DJ", qty: 1, price: 2000 },
+  { name: "Lighting & Special Effects", qty: 1, price: 1500 },
+  { name: "Tables, Chairs & Event Furniture", qty: 1, price: 1500 },
+  { name: "Catering / Food Arrangement", qty: 1, price: 0 },
+  { name: "Photography & Videography", qty: 1, price: 1500 },
+  { name: "Entertainment / Artist Coordination", qty: 1, price: 2500 },
+  { name: "Event Staff & Coordination Team", qty: 1, price: 1500 },
+];
+
 export default function EditInvoicePage() {
   const params = useParams();
   const router = useRouter();
@@ -82,8 +95,8 @@ export default function EditInvoicePage() {
     });
   };
 
-  const addService = () => {
-    setServices((prev) => [...prev, { description: "", qty: 1, unit_price: 0 }]);
+  const addService = (desc = "", qty = 1, unit_price = 0) => {
+    setServices((prev) => [...prev, { description: desc, qty, unit_price }]);
   };
 
   const removeService = (index: number) => {
@@ -206,7 +219,20 @@ export default function EditInvoicePage() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Services</h2>
-            <button type="button" onClick={addService} className="text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add Service</button>
+            <button type="button" onClick={() => addService()} className="text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add Service</button>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {PREDEFINED_SERVICES.map((s) => (
+              <button
+                key={s.name}
+                type="button"
+                onClick={() => addService(s.name, s.qty, s.price)}
+                className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                title={s.price ? `Qty ${s.qty} x ${s.price.toLocaleString()}` : "Amount TBD"}
+              >
+                {s.name}
+              </button>
+            ))}
           </div>
           <div className="space-y-3">
             {services.map((svc, i) => (
