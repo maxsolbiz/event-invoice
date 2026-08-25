@@ -32,6 +32,14 @@ router.put('/', requireRole('admin'), (req, res) => {
       company_logo, company_stamp
     } = req.body;
 
+    const MAX_BASE64_SIZE = 500 * 1024; // 500KB
+    if (company_logo && company_logo.length > MAX_BASE64_SIZE) {
+      return res.status(400).json({ error: 'Company logo exceeds 500KB limit' });
+    }
+    if (company_stamp && company_stamp.length > MAX_BASE64_SIZE) {
+      return res.status(400).json({ error: 'Company stamp exceeds 500KB limit' });
+    }
+
     db.prepare(`
       UPDATE settings SET
         company_name=?, company_subtitle=?, invoice_prefix=?,
