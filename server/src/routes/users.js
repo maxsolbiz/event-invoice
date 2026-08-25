@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { getDb } = require('../database');
 const { requireRole } = require('../middleware');
+const { logActivity } = require('../lib/activity');
 
 const router = express.Router();
 
@@ -42,6 +43,9 @@ router.post('/', (req, res) => {
   const result = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)')
     .run(username, passwordHash, role);
 
+  logActivity(db, req, 'user.create', 'user', result.lastInsertRowid,
+    `Created user ${username} with role ${role}`);
+
   res.json({ id: result.lastInsertRowid, message: 'User created' });
 });
 
@@ -81,6 +85,16 @@ router.put('/:id', (req, res) => {
     'UPDATE users SET role = COALESCE(?, role), is_active = COALESCE(?, is_active) WHERE id = ?'
   ).run(role ?? null, is_active ?? null, id);
 
+  // Activity log — only if something actually changed (no-op guard)
+  if (role !== undefined || is_active !== undefined) {
+    const target = db.prepare('SELECT username FROM users WHERE id = ?').get(id);
+    const fragments = [];
+    if (role !== undefined) fragments.push(`role to ${role}`);
+    if (is_active !== undefined) fragments.push(is_active ? 'activated' : 'deactivated');
+    logActivity(db, req, 'user.update', 'user', id,
+      `Updated user ${target?.username || ''}: ${fragments.join(', ')}`);
+  }
+
   res.json({ message: 'User updated' });
 });
 
@@ -104,6 +118,10 @@ router.put('/:id/password', (req, res) => {
   const now = new Date().toISOString();
   db.prepare('UPDATE users SET password_hash = ?, password_changed_at = ? WHERE id = ?')
     .run(passwordHash, now, id);
+
+  const target = db.prepare('SELECT username FROM users WHERE id = ?').get(id);
+  logActivity(db, req, 'user.password_reset', 'user', id,
+    `Reset password for user ${target?.username || ''}`);
 
   res.json({ message: 'Password updated' });
 });

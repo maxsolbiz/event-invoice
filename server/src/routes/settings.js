@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { requireAuth, requireRole } = require('../middleware');
+const { logActivity } = require('../lib/activity');
 
 const router = express.Router();
 
@@ -39,6 +40,8 @@ router.put('/', requireRole('admin'), (req, res) => {
       company_name, company_subtitle, invoice_prefix,
       default_currency, default_vat, default_payment_terms, default_notes
     );
+
+    logActivity(db, req, 'settings.update', 'settings', 1, 'Updated system settings');
 
     res.json({ message: 'Settings updated' });
   } catch (err) {

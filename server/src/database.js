@@ -121,6 +121,20 @@ function initDb() {
     );
   `);
 
+  // Activity log table
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      username_snapshot TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id INTEGER,
+      description TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
   // Seed settings if empty
   const count = d.prepare('SELECT COUNT(*) as c FROM settings').get().c;
   if (count === 0) {

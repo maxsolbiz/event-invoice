@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { requireAuth } = require('../middleware');
+const { logActivity } = require('../lib/activity');
 
 const router = express.Router();
 
@@ -45,10 +46,14 @@ router.post('/', (req, res) => {
     if (existing) {
       db.prepare('UPDATE clients SET contact=?, address=? WHERE id=?')
         .run(contact || null, address || null, existing.id);
+      logActivity(db, req, 'client.update', 'client', existing.id,
+        `Updated client ${name} (upsert)`);
       res.json({ id: existing.id, message: 'Client updated' });
     } else {
       const result = db.prepare('INSERT INTO clients(name, contact, address) VALUES(?,?,?)')
         .run(name, contact || null, address || null);
+      logActivity(db, req, 'client.create', 'client', result.lastInsertRowid,
+        `Created client ${name}`);
       res.status(201).json({ id: result.lastInsertRowid, message: 'Client created' });
     }
   } catch (err) {
@@ -68,6 +73,8 @@ router.put('/:id', (req, res) => {
     const { name, contact, address } = req.body;
     db.prepare('UPDATE clients SET name=?, contact=?, address=? WHERE id=?')
       .run(name, contact || null, address || null, req.params.id);
+    logActivity(db, req, 'client.update', 'client', Number(req.params.id),
+      `Updated client ${name || ''}`);
     res.json({ message: 'Client updated' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update client' });
@@ -78,7 +85,7 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const db = getDb();
   try {
-    const existing = db.prepare('SELECT id FROM clients WHERE id = ?').get(req.params.id);
+    const existing = db.prepare('SELECT id, name FROM clients WHERE id = ?').get(req.params.id);
     if (!existing) {
       return res.status(404).json({ error: 'Client not found' });
     }
@@ -89,6 +96,8 @@ router.delete('/:id', (req, res) => {
     }
 
     db.prepare('DELETE FROM clients WHERE id = ?').run(req.params.id);
+    logActivity(db, req, 'client.delete', 'client', Number(req.params.id),
+      `Deleted client ${existing.name || ''}`);
     res.json({ message: 'Client deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete client' });

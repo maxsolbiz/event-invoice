@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { requireAuth } = require('../middleware');
+const { logActivity } = require('../lib/activity');
 
 const router = express.Router();
 
@@ -118,6 +119,9 @@ router.post('/', (req, res) => {
       insertService.run(invoiceId, i + 1, s.description, s.qty, s.unit_price, s.amount);
     });
 
+    logActivity(db, req, 'invoice.create', 'invoice', invoiceId,
+      `Created invoice ${pi_no || ''} for ${client_name || ''}`);
+
     res.status(201).json({
       id: invoiceId,
       subtotal: calc.subtotal,
@@ -172,6 +176,9 @@ router.put('/:id', (req, res) => {
       insertService.run(req.params.id, i + 1, s.description, s.qty, s.unit_price, s.amount);
     });
 
+    logActivity(db, req, 'invoice.update', 'invoice', Number(req.params.id),
+      `Updated invoice ${pi_no || ''} for ${client_name || ''}`);
+
     res.json({
       subtotal: calc.subtotal,
       total: calc.total,
@@ -186,13 +193,16 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const db = getDb();
   try {
-    const existing = db.prepare('SELECT id FROM invoices WHERE id = ?').get(req.params.id);
+    const existing = db.prepare('SELECT id, pi_no, client_name FROM invoices WHERE id = ?').get(req.params.id);
     if (!existing) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
 
     db.prepare('DELETE FROM invoice_services WHERE invoice_id = ?').run(req.params.id);
     db.prepare('DELETE FROM invoices WHERE id = ?').run(req.params.id);
+
+    logActivity(db, req, 'invoice.delete', 'invoice', Number(req.params.id),
+      `Deleted invoice ${existing.pi_no || ''} for ${existing.client_name || ''}`);
 
     res.json({ message: 'Invoice deleted' });
   } catch (err) {
