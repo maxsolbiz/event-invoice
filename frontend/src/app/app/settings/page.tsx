@@ -61,7 +61,7 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Prefix</label>
             <input type="text" value={settings.invoice_prefix} onChange={(e) => setSettings({ ...settings, invoice_prefix: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
               <select value={settings.default_currency} onChange={(e) => setSettings({ ...settings, default_currency: e.target.value })} className="w-full px-3 py-2 border rounded-md">

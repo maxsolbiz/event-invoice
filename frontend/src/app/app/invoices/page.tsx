@@ -31,7 +31,7 @@ export default function InvoicesPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <h1 className="text-2xl font-bold">Invoices</h1>
         <Link
           href="/app/invoices/new"
@@ -47,40 +47,42 @@ export default function InvoicesPage() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">PI No</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium">{inv.pi_no}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{inv.client_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{inv.invoice_date}</td>
-                  <td className="px-4 py-3 text-sm text-right font-medium">
-                    {inv.currency} {Number(inv.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/app/invoices/${inv.id}`} className="text-blue-600 hover:text-blue-800 text-sm mr-3">
-                      View
-                    </Link>
-                    <Link href={`/app/invoices/${inv.id}`} className="text-gray-600 hover:text-gray-800 text-sm mr-3">
-                      Edit
-                    </Link>
-                    <button onClick={() => handleDelete(inv.id)} className="text-red-600 hover:text-red-800 text-sm">
-                      Delete
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">PI No</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y">
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium">{inv.pi_no}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{inv.client_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{inv.invoice_date}</td>
+                    <td className="px-4 py-3 text-sm text-right font-medium">
+                      {inv.currency} {Number(inv.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link href={`/app/invoices/${inv.id}`} className="text-blue-600 hover:text-blue-800 text-sm mr-3">
+                        View
+                      </Link>
+                      <Link href={`/app/invoices/${inv.id}`} className="text-gray-600 hover:text-gray-800 text-sm mr-3">
+                        Edit
+                      </Link>
+                      <button onClick={() => handleDelete(inv.id)} className="text-red-600 hover:text-red-800 text-sm">
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

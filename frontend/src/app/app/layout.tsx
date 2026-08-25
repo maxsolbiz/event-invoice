@@ -29,7 +29,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-4 pt-14 md:p-6 md:pt-6 min-w-0">{children}</main>
     </div>
   );
 }

@@ -126,7 +126,7 @@ export default function NewInvoicePage() {
       <form onSubmit={handleSubmit}>
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Invoice Details</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">PI Number</label>
               <input type="text" value={form.pi_no} onChange={(e) => setForm({ ...form, pi_no: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
@@ -146,7 +146,7 @@ export default function NewInvoicePage() {
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Client & Event</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Saved Client</label>
               <select value={form.client_id || ""} onChange={handleClientSelect} className="w-full px-3 py-2 border rounded-md">
@@ -176,7 +176,7 @@ export default function NewInvoicePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
               <input type="text" value={form.event_type} onChange={(e) => setForm({ ...form, event_type: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Address / Notes</label>
               <textarea value={form.client_address} onChange={(e) => setForm({ ...form, client_address: e.target.value })} className="w-full px-3 py-2 border rounded-md" rows={2} />
             </div>
@@ -190,31 +190,35 @@ export default function NewInvoicePage() {
           </div>
           <div className="space-y-3">
             {services.map((svc, i) => (
-              <div key={i} className="grid grid-cols-[1fr_80px_120px_120px_36px] gap-3 items-end">
+              <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_80px_120px_120px_36px] gap-3 items-end">
                 <div>
                   {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>}
                   <input type="text" value={svc.description} onChange={(e) => updateService(i, "description", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm" placeholder="Service description" />
                 </div>
-                <div>
-                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Qty</label>}
-                  <input type="number" min="0" value={svc.qty} onChange={(e) => updateService(i, "qty", Number(e.target.value))} className="w-full px-3 py-2 border rounded-md text-sm text-right" />
+                <div className="grid grid-cols-2 gap-3 md:contents">
+                  <div>
+                    {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Qty</label>}
+                    <input type="number" min="0" value={svc.qty} onChange={(e) => updateService(i, "qty", Number(e.target.value))} className="w-full px-3 py-2 border rounded-md text-sm text-right" />
+                  </div>
+                  <div>
+                    {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Unit Price</label>}
+                    <input type="number" min="0" step="0.01" value={svc.unit_price} onChange={(e) => updateService(i, "unit_price", Number(e.target.value))} className="w-full px-3 py-2 border rounded-md text-sm text-right" />
+                  </div>
                 </div>
-                <div>
-                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Unit Price</label>}
-                  <input type="number" min="0" step="0.01" value={svc.unit_price} onChange={(e) => updateService(i, "unit_price", Number(e.target.value))} className="w-full px-3 py-2 border rounded-md text-sm text-right" />
-                </div>
-                <div>
-                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>}
-                  <div className="px-3 py-2 border rounded-md text-sm text-right bg-gray-50">{form.currency} {(svc.qty * svc.unit_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-                </div>
-                <div>
-                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">&nbsp;</label>}
-                  <button type="button" onClick={() => removeService(i)} className="w-full py-2 text-red-600 hover:text-red-800 text-sm">&times;</button>
+                <div className="grid grid-cols-2 gap-3 md:contents">
+                  <div>
+                    {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>}
+                    <div className="px-3 py-2 border rounded-md text-sm text-right bg-gray-50">{form.currency} {(svc.qty * svc.unit_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+                  </div>
+                  <div>
+                    {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">&nbsp;</label>}
+                    <button type="button" onClick={() => removeService(i)} className="w-full py-2 text-red-600 hover:text-red-800 text-sm">&times;</button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="flex justify-end mt-4 space-x-6 text-sm">
+          <div className="flex flex-wrap justify-end mt-4 gap-4 md:gap-6 text-sm">
             <div>Subtotal: <span className="font-semibold">{form.currency} {subtotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></div>
             <div>VAT: <input type="number" min="0" step="0.01" value={form.vat} onChange={(e) => setForm({ ...form, vat: Number(e.target.value) })} className="w-24 px-2 py-1 border rounded text-right text-sm" /></div>
             <div className="font-bold">Total: {form.currency} {total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
@@ -222,7 +226,7 @@ export default function NewInvoicePage() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
               <input type="text" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} className="w-full px-3 py-2 border rounded-md" />

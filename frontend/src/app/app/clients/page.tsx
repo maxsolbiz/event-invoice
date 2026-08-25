@@ -60,7 +60,7 @@ export default function ClientsPage() {
 
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Add Client</h2>
-        <form onSubmit={handleCreate} className="grid grid-cols-3 gap-4">
+        <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border rounded-md" required />
@@ -73,7 +73,7 @@ export default function ClientsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
             <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
           </div>
-          <div className="col-span-3">
+          <div className="sm:col-span-3">
             <button type="submit" disabled={saving} className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50">
               {saving ? "Saving..." : "Add Client"}
             </button>
@@ -85,28 +85,30 @@ export default function ClientsPage() {
         <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">No clients yet.</div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {clients.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium">{c.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{c.contact || "—"}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{c.address || "—"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleDelete(c.id, c.name)} className="text-red-600 hover:text-red-800 text-sm">Delete</button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[500px]">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y">
+                {clients.map((c) => (
+                  <tr key={c.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium">{c.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{c.contact || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{c.address || "—"}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={() => handleDelete(c.id, c.name)} className="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
