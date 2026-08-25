@@ -39,7 +39,7 @@ describe('Activity Log', () => {
     const res = await admin
       .post('/api/invoices')
       .send({
-        pi_no: 'MOE-PI-100', invoice_date: '2026-01-01', currency: 'AED',
+        invoice_date: '2026-01-01', currency: 'AED',
         client_name: 'Activity Client', vat: 0,
         services: [{ description: 'Service A', qty: 1, unit_price: 100 }]
       })
@@ -49,19 +49,18 @@ describe('Activity Log', () => {
     assert.strictEqual(row.action, 'invoice.create');
     assert.strictEqual(row.entity_type, 'invoice');
     assert.strictEqual(row.entity_id, res.body.id);
-    assert.ok(row.description.includes('MOE-PI-100'));
     assert.ok(row.description.includes('Activity Client'));
     assert.strictEqual(row.username_snapshot, 'testadmin');
   });
 
   it('#2 — invoice update logged', async () => {
     const db = getDb();
-    const invoiceId = db.prepare('SELECT id FROM invoices WHERE pi_no = ?').get('MOE-PI-100').id;
+    const invoiceId = db.prepare('SELECT id FROM invoices WHERE client_name = ?').get('Activity Client').id;
 
     await admin
       .put(`/api/invoices/${invoiceId}`)
       .send({
-        pi_no: 'MOE-PI-100', invoice_date: '2026-01-01', currency: 'AED',
+        invoice_date: '2026-01-01', currency: 'AED',
         client_name: 'Updated Client Name', vat: 0,
         services: [{ description: 'Service B', qty: 2, unit_price: 50 }]
       })
@@ -75,7 +74,7 @@ describe('Activity Log', () => {
 
   it('#3 — invoice delete logged', async () => {
     const db = getDb();
-    const invoiceId = db.prepare('SELECT id FROM invoices WHERE pi_no = ?').get('MOE-PI-100').id;
+    const invoiceId = db.prepare('SELECT id FROM invoices WHERE client_name = ?').get('Updated Client Name').id;
 
     await admin
       .delete(`/api/invoices/${invoiceId}`)
@@ -84,7 +83,6 @@ describe('Activity Log', () => {
     const row = lastActivityLog();
     assert.strictEqual(row.action, 'invoice.delete');
     assert.strictEqual(row.entity_id, invoiceId);
-    assert.ok(row.description.includes('MOE-PI-100'));
     assert.ok(row.description.includes('Updated Client Name'));
   });
 
@@ -263,7 +261,7 @@ describe('Activity Log', () => {
     await admin
       .post('/api/invoices')
       .send({
-        pi_no: 'MOE-PI-LINK', invoice_date: '2026-01-01', currency: 'AED',
+        invoice_date: '2026-01-01', currency: 'AED',
         client_name: 'Linked Client', client_id: clientRes.body.id, vat: 0,
         services: [{ description: 'S', qty: 1, unit_price: 10 }]
       })

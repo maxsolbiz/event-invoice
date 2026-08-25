@@ -8,6 +8,36 @@ const router = express.Router();
 // All invoice routes require authentication
 router.use(requireAuth);
 
+// Helper: generate next PI number from DB
+function generateNextPiNo(db) {
+  const settings = db.prepare('SELECT invoice_prefix FROM settings WHERE id = 1').get();
+  const prefix = settings?.invoice_prefix || 'MOE-PI-';
+
+  const last = db.prepare(
+    "SELECT pi_no FROM invoices WHERE pi_no LIKE ? ORDER BY id DESC LIMIT 1"
+  ).get(prefix + '%');
+
+  let nextNum = 1;
+  if (last && last.pi_no) {
+    const suffix = last.pi_no.slice(prefix.length);
+    const parsed = parseInt(suffix, 10);
+    if (!isNaN(parsed)) nextNum = parsed + 1;
+  }
+
+  return prefix + String(nextNum).padStart(3, '0');
+}
+
+// GET /api/invoices/next-pi-no — return the next auto-generated PI number
+router.get('/next-pi-no', (req, res) => {
+  const db = getDb();
+  try {
+    const pi_no = generateNextPiNo(db);
+    res.json({ pi_no });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate PI number' });
+  }
+});
+
 // Helper: validate and recalculate totals from services
 function validateAndCalculate(services, vat) {
   if (!Array.isArray(services) || services.length === 0) {
@@ -86,7 +116,7 @@ router.post('/', (req, res) => {
   const db = getDb();
   try {
     const {
-      pi_no, invoice_date, currency, client_name, client_contact,
+      invoice_date, currency, client_name, client_contact,
       venue, event_date, event_type, event_note, client_address,
       vat, payment_terms, notes, client_id, services
     } = req.body;
@@ -96,6 +126,9 @@ router.post('/', (req, res) => {
     if (calc.error) {
       return res.status(400).json({ error: calc.error });
     }
+
+    // Auto-generate PI number — ignore any client-provided value
+    const pi_no = generateNextPiNo(db);
 
     const result = db.prepare(`
       INSERT INTO invoices(pi_no, invoice_date, currency, client_name, client_contact,
@@ -120,10 +153,11 @@ router.post('/', (req, res) => {
     });
 
     logActivity(db, req, 'invoice.create', 'invoice', invoiceId,
-      `Created invoice ${pi_no || ''} for ${client_name || ''}`);
+      `Created invoice ${pi_no} for ${client_name || ''}`);
 
     res.status(201).json({
       id: invoiceId,
+      pi_no,
       subtotal: calc.subtotal,
       total: calc.total,
       message: 'Invoice created'
@@ -137,13 +171,13 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   const db = getDb();
   try {
-    const existing = db.prepare('SELECT id FROM invoices WHERE id = ?').get(req.params.id);
+    const existing = db.prepare('SELECT id, pi_no FROM invoices WHERE id = ?').get(req.params.id);
     if (!existing) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
 
     const {
-      pi_no, invoice_date, currency, client_name, client_contact,
+      invoice_date, currency, client_name, client_contact,
       venue, event_date, event_type, event_note, client_address,
       vat, payment_terms, notes, client_id, services
     } = req.body;
@@ -153,6 +187,9 @@ router.put('/:id', (req, res) => {
     if (calc.error) {
       return res.status(400).json({ error: calc.error });
     }
+
+    // PI number is immutable — always use the existing value
+    const pi_no = existing.pi_no;
 
     db.prepare(`
       UPDATE invoices SET pi_no=?, invoice_date=?, currency=?, client_name=?, client_contact=?,
@@ -177,7 +214,7 @@ router.put('/:id', (req, res) => {
     });
 
     logActivity(db, req, 'invoice.update', 'invoice', Number(req.params.id),
-      `Updated invoice ${pi_no || ''} for ${client_name || ''}`);
+      `Updated invoice ${pi_no} for ${client_name || ''}`);
 
     res.json({
       subtotal: calc.subtotal,

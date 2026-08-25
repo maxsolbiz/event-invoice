@@ -31,11 +31,13 @@ export const api = {
   // Invoices
   listInvoices: () => request<{ invoices: Invoice[] }>("/invoices"),
 
+  getNextPiNo: () => request<{ pi_no: string }>("/invoices/next-pi-no"),
+
   getInvoice: (id: number) =>
     request<{ invoice: Invoice; services: InvoiceService[] }>(`/invoices/${id}`),
 
   createInvoice: (data: CreateInvoiceInput) =>
-    request<{ id: number; subtotal: number; total: number; message: string }>(
+    request<{ id: number; pi_no: string; subtotal: number; total: number; message: string }>(
       "/invoices",
       { method: "POST", body: JSON.stringify(data) }
     ),
@@ -153,7 +155,7 @@ export interface InvoiceService {
 }
 
 export interface CreateInvoiceInput {
-  pi_no: string;
+  pi_no?: string;
   invoice_date: string;
   currency: string;
   client_name: string;

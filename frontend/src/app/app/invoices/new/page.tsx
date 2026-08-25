@@ -32,7 +32,6 @@ export default function NewInvoicePage() {
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    pi_no: "",
     invoice_date: new Date().toISOString().slice(0, 10),
     currency: "AED",
     client_name: "",
@@ -59,7 +58,6 @@ export default function NewInvoicePage() {
         setClients(c.clients);
         setForm((prev) => ({
           ...prev,
-          pi_no: s.settings.invoice_prefix + "001",
           currency: s.settings.default_currency,
           vat: s.settings.default_vat,
           payment_terms: s.settings.default_payment_terms,
@@ -139,11 +137,7 @@ export default function NewInvoicePage() {
       <form onSubmit={handleSubmit}>
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Invoice Details</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PI Number</label>
-              <input type="text" value={form.pi_no} onChange={(e) => setForm({ ...form, pi_no: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Date</label>
               <input type="date" value={form.invoice_date} onChange={(e) => setForm({ ...form, invoice_date: e.target.value })} className="w-full px-3 py-2 border rounded-md" />

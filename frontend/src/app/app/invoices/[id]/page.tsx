@@ -162,7 +162,7 @@ export default function EditInvoicePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">PI Number</label>
-              <input type="text" value={form.pi_no} onChange={(e) => setForm({ ...form, pi_no: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
+              <input type="text" value={form.pi_no} readOnly className="w-full px-3 py-2 border rounded-md bg-gray-50 text-gray-500 cursor-not-allowed" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Date</label>
