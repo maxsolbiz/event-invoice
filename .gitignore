@@ -3,3 +3,16 @@
 *.png
 invoice.html
 round1_diff.txt
+
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+
+# Database files
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+data/
