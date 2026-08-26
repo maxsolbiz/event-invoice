@@ -115,11 +115,11 @@ function buildInvoiceHtml(
   .notes { margin-top: 24px; }
   .notes-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 7px; }
   .notes-text { font-size: 9px; line-height: 1.6; color: #6b7280; white-space: pre-line; }
-  .sign-area { margin-top: 45px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .sign-area { margin-top: 45px; display: flex; justify-content: space-between; align-items: flex-end; position: relative; }
   .sign { width: 190px; }
   .sign-line { border-top: 1px solid #9ca3af; margin-bottom: 7px; }
   .sign-label { font-size: 8px; color: #6b7280; }
-  .stamp { width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: .8px; }
+  .stamp { width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: .8px; position: absolute; right: 0; bottom: 0; }
   .footer { margin-top: auto; padding-top: 15px; border-top: 1px solid #e5e7eb; text-align: center; }
   .footer-thanks { font-size: 9px; font-weight: 700; color: #374151; letter-spacing: .4px; }
   .footer-company { margin-top: 4px; font-size: 8px; color: #9ca3af; letter-spacing: .5px; }
