@@ -95,24 +95,24 @@ function buildInvoiceHtml(
   .event-box { margin-top: 24px; padding: 12px 14px; background: #f8f9fa; border-left: 3px solid var(--ink); display: flex; justify-content: space-between; }
   .event-label { font-size: 8px; font-weight: 700; letter-spacing: 1px; color: #6b7280; text-transform: uppercase; }
   .event-name { font-size: 12px; font-weight: 700; color: #111827; margin-top: 3px; }
-  .service-section { margin-top: 28px; }
+  .service-section { margin-top: 20px; }
   .service-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 9px; color: #374151; }
   .inv-table { width: 100%; border-collapse: collapse; }
-  .inv-table th { background: #1f2937; color: #fff; padding: 11px 10px; font-size: 8px; text-transform: uppercase; letter-spacing: .8px; text-align: left; }
+  .inv-table th { background: #1f2937; color: #fff; padding: 9px 10px; font-size: 8px; text-transform: uppercase; letter-spacing: .8px; text-align: left; }
   .inv-table th:first-child { width: 35px; text-align: center; }
   .inv-table th:nth-child(3), .inv-table th:nth-child(4), .inv-table th:nth-child(5) { width: 80px; text-align: right; }
-  .inv-table td { padding: 14px 10px; border-bottom: 1px solid #e5e7eb; font-size: 10px; vertical-align: middle; }
+  .inv-table td { padding: 10px 10px; border-bottom: 1px solid #e5e7eb; font-size: 10px; vertical-align: middle; }
   .inv-table td:first-child { text-align: center; color: #6b7280; }
   .inv-table td:nth-child(3), .inv-table td:nth-child(4), .inv-table td:nth-child(5) { text-align: right; font-weight: 600; white-space: nowrap; }
   .desc { font-weight: 700; font-size: 11px; color: #111827; }
-  .summary-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .summary-wrap { display: flex; justify-content: flex-end; margin-top: 10px; }
   .summary { width: 260px; }
   .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 10px; color: #4b5563; }
   .summary-row.total { margin-top: 5px; padding: 12px 0; border-top: 2px solid #1f2937; font-size: 13px; font-weight: 800; color: #111827; }
-  .words { margin-top: 24px; padding: 13px 15px; border: 1px solid #e5e7eb; border-radius: 3px; }
+  .words { margin-top: 16px; padding: 13px 15px; border: 1px solid #e5e7eb; border-radius: 3px; }
   .words .w { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; margin-bottom: 5px; }
   .words .text { font-size: 10px; font-weight: 700; color: #374151; }
-  .notes { margin-top: 24px; }
+  .notes { margin-top: 16px; }
   .notes-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 7px; }
   .notes-text { font-size: 9px; line-height: 1.6; color: #6b7280; white-space: pre-line; }
   .sign-area { margin-top: 45px; display: flex; justify-content: space-between; align-items: flex-end; position: relative; }
