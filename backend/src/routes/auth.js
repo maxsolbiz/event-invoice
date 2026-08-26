@@ -75,10 +75,16 @@ router.post('/login', (req, res) => {
 
       logLoginEvent(db, user.id, username.slice(0, 100), true, null, ip, userAgent, req);
 
-      res.json({
-        message: 'Login successful',
-        user: { id: user.id, username: user.username, role: user.role },
-        must_change_password: !user.password_changed_at
+      req.session.save((err) => {
+        if (err) {
+          return res.status(500).json({ error: 'Login failed' });
+        }
+
+        res.json({
+          message: 'Login successful',
+          user: { id: user.id, username: user.username, role: user.role },
+          must_change_password: !user.password_changed_at
+        });
       });
     });
   } finally {
